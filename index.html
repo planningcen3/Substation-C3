@@ -1,0 +1,1174 @@
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+
+// คลาสและดีไซน์สีหลักของ PEA: ม่วง (PEA Purple: #7B1FA2) และ ส้ม (PEA Orange: #FF9800)
+const THEME = {
+  primary: 'from-purple-900 to-indigo-950',
+  purpleLight: '#F3E5F5',
+  purpleMedium: '#9C27B0',
+  purpleDark: '#7B1FA2',
+  orange: '#FF9800',
+  orangeDark: '#F57C00',
+  orangeLight: '#FFF3E0',
+};
+
+// ข้อมูลสถานีไฟฟ้าต้นแบบ กฟก.3 (กรณีดึงออนไลน์ไม่ได้ หรือใช้สำหรับแสดงผลทันที)
+const DEFAULT_STATIONS_DATA = [
+  { id: 1, no: 1, pea_name: "สมุทรสาคร 1", egat_name: "สมุทรสาคร 1", name: "สมุทรสาคร 1", abbr: "SMA", type: "EGAT", voltage: "115/22 kV", size: "3x50 MVA", project: "คพจ.2 (Renovate)", lat: 13.593392, lng: 100.281931, loop: "Loop A", affiliation: "กฟจ.สมุทรสาคร", note: "ถาวร", note2: "Renovate", area: 12.5, price: 45000000, power_date: "2018-03-15", max_load_mw: 40.8, max_load_percent: 30.22 },
+  { id: 2, no: 2, pea_name: "สมุทรสาคร 2", egat_name: "สมุทรสาคร 2", name: "สมุทรสาคร 2", abbr: "SMB", type: "EGAT", voltage: "115/22 kV", size: "3x50 MVA", project: "แผนปกติ", lat: 13.540950, lng: 100.229825, loop: "Loop A", affiliation: "กฟส.สมุทรสาคร", note: "ถาวร", note2: "", area: 10.2, price: 38000000, power_date: "2019-10-22", max_load_mw: 29.4, max_load_percent: 21.78 },
+  { id: 3, no: 3, pea_name: "อ้อมใหญ่ 1", egat_name: "อ้อมใหญ่ 1", name: "อ้อมใหญ่ 1", abbr: "OY1", type: "PEA", voltage: "115/22 kV", size: "2x50 MVA", project: "คพจ.2", lat: 13.702511, lng: 100.267812, loop: "Loop B", affiliation: "กฟจ.นครปฐม", note: "ชั่วคราว", note2: "โหลดหนาแน่น", area: 8.5, price: 52000000, power_date: "2015-05-12", max_load_mw: 88.5, max_load_percent: 88.50 },
+  { id: 4, no: 4, pea_name: "กระทุ่มแบน 6", egat_name: "กระทุ่มแบน 6", name: "กระทุ่มแบน 6", abbr: "KTB6", type: "PEA", voltage: "115/22 kV", size: "2x50 MVA", project: "คจก.3", lat: 13.654812, lng: 100.254129, loop: "Loop B", affiliation: "กฟจ.สมุทรสาคร", note: "ชั่วคราว", note2: "จ่ายไฟเพิ่ม", area: 7.2, price: 31000000, power_date: "2021-12-01", max_load_mw: 79.2, max_load_percent: 79.20 },
+  { id: 5, no: 5, pea_name: "นครปฐม 1", egat_name: "นครปฐม 1", name: "นครปฐม 1", abbr: "NPA", type: "EGAT", voltage: "115/22 kV", size: "3x50 MVA", project: "คพจ.1", lat: 13.814325, lng: 100.041289, loop: "Loop C", affiliation: "กฟจ.นครปฐม", note: "ถาวร", note2: "", area: 15.0, price: 60000000, power_date: "2012-08-18", max_load_mw: 68.4, max_load_percent: 45.60 },
+  { id: 6, no: 6, pea_name: "นครปฐม 2", egat_name: "นครปฐม 2", name: "นครปฐม 2", abbr: "NPB", type: "EGAT", voltage: "115/22 kV", size: "3x50 MVA", project: "แผนปกติ", lat: 13.832910, lng: 100.062145, loop: "Loop C", affiliation: "กฟจ.นครปฐม", note: "ถาวร", note2: "", area: 14.2, price: 58000000, power_date: "2014-04-10", max_load_mw: 92.1, max_load_percent: 61.40 },
+  { id: 7, no: 7, pea_name: "สามพราน 2", egat_name: "สามพราน 2", name: "สามพราน 2", abbr: "SPR2", type: "Indoor", voltage: "22 kV", size: "2x50 MVA", project: "แผนเร่งด่วน", lat: 13.721450, lng: 100.218901, loop: "Loop D", affiliation: "กฟส.สามพราน", note: "ถาวร", note2: "", area: 5.4, price: 29000000, power_date: "2017-11-30", max_load_mw: 42.6, max_load_percent: 42.60 },
+  { id: 8, no: 8, pea_name: "กำแพงแสน", egat_name: "กำแพงแสน", name: "กำแพงแสน", abbr: "KPS", type: "PEA", voltage: "115/22 kV", size: "2x50 MVA", project: "คพจ.2", lat: 14.011892, lng: 99.982315, loop: "Loop E", affiliation: "กฟส.กำแพงแสน", note: "ถาวร", note2: "ขยายเขตอุสาหกรรม", area: 11.8, price: 41000000, power_date: "2016-01-20", max_load_mw: 54.3, max_load_percent: 54.30 },
+  { id: 9, no: 9, pea_name: "ศรีประจันต์", egat_name: "ศรีประจันต์", name: "ศรีประจันต์", abbr: "SPC", type: "PEA", voltage: "115/22 kV", size: "1x50 MVA", project: "ชั่วคราวเร่งด่วน", lat: 14.621450, lng: 100.142560, loop: "Loop F", affiliation: "กฟส.ศรีประจันต์", note: "ชั่วคราว", note2: "รออนุมัติถาวร", area: 4.5, price: 15000000, power_date: "2022-02-14", max_load_mw: 41.2, max_load_percent: 82.40 },
+  { id: 10, no: 10, pea_name: "สุพรรณบุรี 1", egat_name: "สุพรรณบุรี 1", name: "สุพรรณบุรี 1", abbr: "SP1", type: "EGAT", voltage: "115/22 kV", size: "3x50 MVA", project: "แผนปกติ", lat: 14.471250, lng: 100.118920, loop: "Loop F", affiliation: "กฟจ.สุพรรณบุรี", note: "ถาวร", note2: "", area: 13.8, price: 49000000, power_date: "2011-09-05", max_load_mw: 49.8, max_load_percent: 33.20 },
+  { id: 11, no: 11, pea_name: "ท่าม่วง 2", egat_name: "ท่าม่วง 2", name: "ท่าม่วง 2", abbr: "TM2", type: "PEA", voltage: "115/22 kV", size: "2x50 MVA", project: "คพจ.3", lat: 13.962510, lng: 99.642150, loop: "Loop G", affiliation: "กฟส.ท่าม่วง", note: "ชั่วคราว", note2: "", area: 6.9, price: 24000000, power_date: "2020-07-19", max_load_mw: 38.4, max_load_percent: 38.40 },
+  { id: 12, no: 12, pea_name: "กาญจนบุรี 1", egat_name: "กาญจนบุรี 1", name: "กาญจนบุรี 1", abbr: "KB1", type: "Indoor", voltage: "22 kV", size: "2x50 MVA", project: "คพจ.1", lat: 14.018950, lng: 99.521480, loop: "Loop G", affiliation: "กฟจ.กาญจนบุรี", note: "ถาวร", note2: "", area: 8.0, price: 35000000, power_date: "2013-05-10", max_load_mw: 59.5, max_load_percent: 59.50 },
+  { id: 13, no: 13, pea_name: "ท่ามะกา 2", egat_name: "ท่ามะกา 2", name: "ท่ามะกา 2", abbr: "TMK2", type: "PEA", voltage: "115/22 kV", size: "2x50 MVA", project: "คพจ.2", lat: 13.921470, lng: 99.781240, loop: "Loop H", affiliation: "กฟส.ท่ามะกา", note: "ชั่วคราว", note2: "", area: 6.5, price: 22000000, power_date: "2019-11-15", max_load_mw: 45.8, max_load_percent: 45.80 },
+  { id: 14, no: 14, pea_name: "บางเลน 2", egat_name: "บางเลน 2", name: "บางเลน 2", abbr: "BLN2", type: "PEA", voltage: "115/22 kV", size: "2x50 MVA", project: "แผนงานย้ายศาล", lat: 14.021580, lng: 100.165420, loop: "Loop E", affiliation: "กฟส.บางเลน", note: "ชั่วคราว", note2: "ย้ายไปสถานีใหม่ปี 70", area: 9.1, price: 33000000, power_date: "2020-01-25", max_load_mw: 22.4, max_load_percent: 22.40 },
+  { id: 15, no: 15, pea_name: "กระทุ่มแบน 1", egat_name: "กระทุ่มแบน 1", name: "กระทุ่มแบน 1", abbr: "KTB1", type: "EGAT", voltage: "115/22 kV", size: "3x50 MVA", project: "ปรับปรุงระบบสายส่ง", lat: 13.659840, lng: 100.268740, loop: "Loop B", affiliation: "กฟส.กระทุ่มแบน", note: "ถาวร", note2: "จ่ายไฟเต็มพิกัด", area: 14.5, price: 54000000, power_date: "2010-06-12", max_load_mw: 127.8, max_load_percent: 85.20 }
+];
+
+export function App() {
+  const [stations, setStations] = useState(DEFAULT_STATIONS_DATA);
+  const [selectedStation, setSelectedStation] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'map', 'list', 'import'
+  const [syncUrl, setSyncUrl] = useState('https://docs.google.com/spreadsheets/d/1uINEa5fu2DL3IsSwEqmJ2CGetgyl82tk/edit?gid=1217557244#gid=1217557244');
+  const [syncStatus, setSyncStatus] = useState({ success: null, message: 'ใช้ชุดข้อมูลภายในระบบ กฟก.3' });
+  
+  // สถานะตัวกรองและการค้นหา
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterAffiliation, setFilterAffiliation] = useState('all');
+  const [filterVoltage, setFilterVoltage] = useState('all');
+  const [filterType, setFilterType] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all'); // Safe, Overloaded, Critical
+  const [sortConfig, setSortConfig] = useState({ key: 'no', direction: 'ascending' });
+
+  // ฟอร์มสำหรับเพิ่ม/แก้ไขสถานีไฟฟ้า
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [formMode, setFormMode] = useState('add'); // 'add' หรือ 'edit'
+  const [stationForm, setStationForm] = useState({
+    id: '', name: '', abbr: '', affiliation: '', type: 'EGAT',
+    voltage: '115/22 kV', size: '2x50 MVA', project: '', 
+    lat: '', lng: '', max_load_mw: '', max_load_percent: '',
+    note: 'ถาวร', area: '', price: '', power_date: ''
+  });
+
+  // อ้างอิงแผนที่ Leaflet
+  const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+
+  // ดึงข้อมูลสดจาก Google Sheets เมื่อโหลดครั้งแรก หรือกดปุ่มรีเฟรช
+  const fetchGoogleSheetData = async (customUrl) => {
+    setLoading(true);
+    try {
+      // แปลง URL สำหรับ Export CSV
+      let docId = '1uINEa5fu2DL3IsSwEqmJ2CGetgyl82tk';
+      let gid = '1217557244';
+      
+      const matchDoc = customUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (matchDoc) docId = matchDoc[1];
+      
+      const matchGid = customUrl.match(/gid=([0-9]+)/);
+      if (matchGid) gid = matchGid[1];
+
+      const csvUrl = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${gid}`;
+      
+      const res = await fetch(csvUrl);
+      if (!res.ok) throw new Error('ไม่สามารถดึงข้อมูลจาก Google Sheets ได้ กรุณาตรวจสอบสิทธิ์การแชร์ลิงก์');
+      const csvText = await res.text();
+      
+      const parsedData = parseCSV(csvText);
+      if (parsedData && parsedData.length > 0) {
+        setStations(parsedData);
+        setSyncStatus({ 
+          success: true, 
+          message: `เชื่อมต่อเรียบร้อย! ซิงค์สำเร็จ ${parsedData.length} สถานีจาก Google Sheet` 
+        });
+      } else {
+        throw new Error('ไม่พบข้อมูลสถานีที่สมบูรณ์ในแผ่นงานนี้');
+      }
+    } catch (err) {
+      console.error(err);
+      setSyncStatus({ 
+        success: false, 
+        message: `ล้มเหลว: ${err.message} (กำลังใช้งานฐานข้อมูลสำรองในตัวแทน)` 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // พยายามเชื่อมต่อดึงข้อมูลเริ่มแรก
+    fetchGoogleSheetData(syncUrl);
+  }, []);
+
+  // ตัวช่วยวิเคราะห์โครงสร้างไฟล์ CSV ของกฟก.3
+  const parseCSV = (csvText) => {
+    const lines = csvText.split('\n');
+    if (lines.length < 2) return null;
+    
+    // ตรวจสอบแถวหัวข้อ (มักจะเริ่มที่แถว 1 หรือ 2)
+    let headerIndex = 0;
+    for (let i = 0; i < Math.min(5, lines.length); i++) {
+      if (lines[i].includes('สถานีไฟฟ้า') || lines[i].includes('ตัวย่อ') || lines[i].includes('สังกัด')) {
+        headerIndex = i;
+        break;
+      }
+    }
+
+    const headers = lines[headerIndex].split(',').map(h => h.trim().replace(/"/g, ''));
+    const results = [];
+    
+    // แถวข้อมูลถัดจากหัวข้อ
+    for (let i = headerIndex + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim()) continue;
+      
+      // จัดการกับเครื่องหมายอัญประกาศใน CSV ป้องกันเรื่องทศนิยมและ comma
+      const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+      const row = matches.map(val => val.trim().replace(/"/g, ''));
+      
+      if (row.length < 3 || !row[1]) continue; // ข้อมูลไม่ครบ
+      
+      // พยายามจับคู่อินเด็กซ์กับชื่อคอลัมน์ภาษาไทย
+      const findVal = (keywords) => {
+        const idx = headers.findIndex(h => keywords.some(k => h.includes(k)));
+        return idx !== -1 ? row[idx] : '';
+      };
+
+      const latVal = parseFloat(findVal(['Latitude', 'lat', 'ละติจูด'])) || 13.7;
+      const lngVal = parseFloat(findVal(['Longitude', 'lng', 'ลองจิจูด'])) || 100.1;
+      const loadMw = parseFloat(findVal(['โหลดสูงสุด (MW)', 'โหลดสูงสุด'])) || 0;
+      const loadPercent = parseFloat(findVal(['เปอร์เซนต์', 'โหลดสูงสุดเปอร์เซนต์', 'Load %'])) || 0;
+      
+      results.push({
+        id: i,
+        no: results.length + 1,
+        pea_name: findVal(['สถานีไฟฟ้า กฟภ', 'กฟภ.']),
+        egat_name: findVal(['สถานีไฟฟ้า กฟผ', 'กฟผ.']),
+        name: findVal(['ชื่อสถานีไฟฟ้า', 'ชื่อสถานี', 'สถานี']),
+        abbr: findVal(['ตัวย่อ', 'อักษรย่อ']),
+        type: findVal(['ชนิด', 'รูปแบบ']) || 'PEA',
+        voltage: findVal(['ระดับแรงดัน', 'แรงดัน']) || '115/22 kV',
+        size: findVal(['ขนาด', 'MVA']) || '2x50 MVA',
+        project: findVal(['โครงการ', 'ชื่อโครงการ']),
+        lat: latVal,
+        lng: lngVal,
+        loop: findVal(['Loop', 'ลูป']),
+        affiliation: findVal(['สังกัด', 'จังหวัด']) || 'กฟก.3',
+        note: findVal(['หมายเหตุ']) || 'ถาวร',
+        note2: findVal(['หมายเหตุ (2)', 'หมายเหตุ2']),
+        area: parseFloat(findVal(['พื้นที่', 'ไร่'])) || 0,
+        price: parseFloat(findVal(['ราคา', 'บาท'])) || 0,
+        power_date: findVal(['วันจ่ายไฟ', 'วันที่']),
+        max_load_mw: loadMw,
+        max_load_percent: loadPercent || (loadMw ? Math.round((loadMw / 100) * 100) : 0)
+      });
+    }
+    
+    return results;
+  };
+
+  // กรองข้อมูลตามที่ผู้ใช้งานเลือก
+  const filteredStations = useMemo(() => {
+    return stations.filter(st => {
+      const matchSearch = 
+        st.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        st.abbr?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        st.affiliation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        st.project?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchAffiliation = filterAffiliation === 'all' || st.affiliation === filterAffiliation;
+      const matchVoltage = filterVoltage === 'all' || st.voltage === filterVoltage;
+      const matchType = filterType === 'all' || st.type === filterType;
+      
+      let matchStatus = true;
+      if (filterStatus === 'critical') {
+        matchStatus = st.max_load_percent >= 80;
+      } else if (filterStatus === 'warning') {
+        matchStatus = st.max_load_percent >= 60 && st.max_load_percent < 80;
+      } else if (filterStatus === 'safe') {
+        matchStatus = st.max_load_percent < 60;
+      }
+
+      return matchSearch && matchAffiliation && matchVoltage && matchType && matchStatus;
+    });
+  }, [stations, searchTerm, filterAffiliation, filterVoltage, filterType, filterStatus]);
+
+  // เรียงลำดับข้อมูลในตาราง
+  const sortedStations = useMemo(() => {
+    let sortableItems = [...filteredStations];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filteredStations, sortConfig]);
+
+  const requestSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // รายการสังกัดที่มีทั้งหมด (นครปฐม, สมุทรสาคร, สุพรรณบุรี, กาญจนบุรี ฯลฯ)
+  const affiliationsList = useMemo(() => {
+    const list = new Set(stations.map(s => s.affiliation).filter(Boolean));
+    return Array.from(list);
+  }, [stations]);
+
+  // คำนวณสถิติภาพรวม
+  const stats = useMemo(() => {
+    const total = filteredStations.length;
+    let totalCap = 0;
+    let totalMaxLoad = 0;
+    let criticalCount = 0;
+    let warningCount = 0;
+
+    filteredStations.forEach(st => {
+      // ดึงตัวเลขขนาดหม้อแปลงเช่น "3x50 MVA" => 150
+      if (st.size) {
+        const matches = st.size.match(/(\d+)\s*[xX*]\s*(\d+)/);
+        if (matches) {
+          totalCap += parseInt(matches[1]) * parseInt(matches[2]);
+        } else {
+          const singleMatch = st.size.match(/(\d+)/);
+          if (singleMatch) totalCap += parseInt(singleMatch[1]);
+        }
+      }
+      totalMaxLoad += st.max_load_mw || 0;
+      if (st.max_load_percent >= 80) criticalCount++;
+      else if (st.max_load_percent >= 60) warningCount++;
+    });
+
+    const avgLoadPercent = total > 0 
+      ? (filteredStations.reduce((sum, st) => sum + (st.max_load_percent || 0), 0) / total).toFixed(2)
+      : 0;
+
+    return { total, totalCap, totalMaxLoad: totalMaxLoad.toFixed(1), avgLoadPercent, criticalCount, warningCount };
+  }, [filteredStations]);
+
+  // ตั้งค่าและแสดงแผนที่ Leaflet ในแถบแผนที่
+  useEffect(() => {
+    if (activeTab === 'map' && mapRef.current && !mapInstance.current) {
+      // โหลดไฟล์สคริปต์ Leaflet และ CSS
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.onload = () => {
+        if (!window.L) return;
+        
+        // ศูนย์กลาง กฟก.3 (บริเวณ จ.นครปฐม)
+        const map = window.L.map(mapRef.current).setView([13.82, 100.04], 9);
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; PEA Region 3 Area Power Map'
+        }).addTo(map);
+
+        mapInstance.current = map;
+        renderMarkers();
+      };
+      document.head.appendChild(script);
+    } else if (activeTab === 'map' && mapInstance.current) {
+      // หากสร้างแมปเรียบร้อยแล้ว ให้ทำการเรนเดอร์หมุดใหม่
+      renderMarkers();
+    }
+  }, [activeTab, filteredStations]);
+
+  // วาดหมุดสถานีไฟฟ้าบนแผนที่
+  const renderMarkers = () => {
+    if (!mapInstance.current || !window.L) return;
+
+    // เคลียร์หมุดเก่า
+    mapInstance.current.eachLayer((layer) => {
+      if (layer instanceof window.L.Marker) {
+        mapInstance.current.removeLayer(layer);
+      }
+    });
+
+    filteredStations.forEach(st => {
+      if (!st.lat || !st.lng) return;
+
+      // สีหมุดตามระดับโหลด %
+      let color = '#22C55E'; // ปลอดภัย
+      if (st.max_load_percent >= 80) color = '#EF4444'; // อันตราย
+      else if (st.max_load_percent >= 60) color = '#F97316'; // เฝ้าระวัง
+
+      const customIcon = window.L.divIcon({
+        html: `<div class="flex items-center justify-center w-8 h-8 rounded-full shadow-lg border-2 border-white text-white font-bold text-xs" style="background-color: ${color}">
+                ${st.abbr || st.name.slice(0, 2)}
+              </div>`,
+        className: 'custom-div-icon',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      const popupContent = `
+        <div class="p-2 font-sans">
+          <h3 class="font-bold text-purple-900 text-sm">สถานีไฟฟ้า: ${st.name}</h3>
+          <p class="text-xs text-gray-600">ตัวย่อ: <b>${st.abbr || '-'}</b> | สังกัด: ${st.affiliation}</p>
+          <div class="mt-2 pt-1 border-t border-gray-100 flex justify-between gap-4">
+            <div>
+              <p class="text-[10px] text-gray-400">ขนาดพิกัด</p>
+              <p class="text-xs font-semibold text-gray-800">${st.size}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-gray-400">โหลดสูงสุด</p>
+              <p class="text-xs font-bold" style="color: ${color}">${st.max_load_percent}% (${st.max_load_mw} MW)</p>
+            </div>
+          </div>
+          <button onclick="window.showSubstationDetails(${st.id})" class="mt-3 w-full bg-purple-700 hover:bg-purple-800 text-white text-[11px] py-1 px-2 rounded font-medium transition text-center block">
+            ดูรายละเอียดข้อมูลเชิงลึก
+          </button>
+        </div>
+      `;
+
+      window.showSubstationDetails = (id) => {
+        const found = stations.find(s => s.id === id);
+        if (found) setSelectedStation(found);
+      };
+
+      window.L.marker([st.lat, st.lng], { icon: customIcon })
+        .addTo(mapInstance.current)
+        .bindPopup(popupContent);
+    });
+  };
+
+  // การส่งแบบฟอร์ม (เพิ่ม/แก้ไข ข้อมูลสถานี)
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    if (!stationForm.name || !stationForm.abbr) {
+      alert("กรุณากรอกชื่อสถานีไฟฟ้าและตัวย่อ");
+      return;
+    }
+
+    const updatedForm = {
+      ...stationForm,
+      id: formMode === 'add' ? Date.now() : stationForm.id,
+      no: formMode === 'add' ? stations.length + 1 : stationForm.no,
+      lat: parseFloat(stationForm.lat) || 13.7,
+      lng: parseFloat(stationForm.lng) || 100.1,
+      max_load_mw: parseFloat(stationForm.max_load_mw) || 0,
+      max_load_percent: parseFloat(stationForm.max_load_percent) || 0,
+      area: parseFloat(stationForm.area) || 0,
+      price: parseFloat(stationForm.price) || 0,
+    };
+
+    if (formMode === 'add') {
+      setStations([updatedForm, ...stations]);
+      setSyncStatus({ success: true, message: `เพิ่มสถานีไฟฟ้า "${updatedForm.name}" สำเร็จ!` });
+    } else {
+      setStations(stations.map(s => s.id === updatedForm.id ? updatedForm : s));
+      setSelectedStation(updatedForm);
+      setSyncStatus({ success: true, message: `แก้ไขข้อมูลสถานี "${updatedForm.name}" เรียบร้อยแล้ว` });
+    }
+
+    setShowAddForm(false);
+    resetForm();
+  };
+
+  const handleEditClick = (station) => {
+    setFormMode('edit');
+    setStationForm({ ...station });
+    setShowAddForm(true);
+  };
+
+  const handleDeleteStation = (id) => {
+    if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลสถานีไฟฟ้านี้ออกจากแดชบอร์ด?")) {
+      setStations(stations.filter(s => s.id !== id));
+      setSelectedStation(null);
+      setSyncStatus({ success: true, message: "ลบสถานีไฟฟ้าเรียบร้อย" });
+    }
+  };
+
+  const resetForm = () => {
+    setStationForm({
+      id: '', name: '', abbr: '', affiliation: '', type: 'EGAT',
+      voltage: '115/22 kV', size: '2x50 MVA', project: '', 
+      lat: '', lng: '', max_load_mw: '', max_load_percent: '',
+      note: 'ถาวร', area: '', price: '', power_date: ''
+    });
+  };
+
+  const handleExportCSV = () => {
+    const headers = ['No.', 'ชื่อสถานีไฟฟ้า', 'ตัวย่อ', 'ชนิด-รูปแบบ', 'ระดับแรงดัน', 'ขนาดพิกัด', 'โครงการ', 'Latitude', 'Longitude', 'สังกัด/จังหวัด', 'สถานะ', 'พื้นที่ (ไร่)', 'ราคาก่อสร้าง', 'วันจ่ายไฟ', 'โหลดสูงสุด (MW)', 'เปอร์เซ็นต์โหลดสูงสุด (%)'];
+    const rows = filteredStations.map(s => [
+      s.no, s.name, s.abbr, s.type, s.voltage, s.size, s.project || '-', s.lat, s.lng, s.affiliation, s.note, s.area || 0, s.price || 0, s.power_date || '-', s.max_load_mw || 0, s.max_load_percent || 0
+    ]);
+    
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `PEA_C3_Substations_Report_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col antialiased">
+      
+      {/* ส่วนหัวแอปพลิเคชัน (PEA Brand Theme) */}
+      <header className={`bg-gradient-to-r ${THEME.primary} text-white px-6 py-4 shadow-md flex flex-col md:flex-row justify-between items-center gap-4`}>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-inner overflow-hidden border-2 border-orange-500">
+            {/* SVG โลโก้สายฟ้า/ตราสัญลักษณ์สไตล์ PEA */}
+            <svg viewBox="0 0 24 24" className="w-8 h-8 text-purple-700 fill-current">
+              <path d="M19 10h-6c0-1.1.9-2 2-2h1c.6 0 1-.4 1-1V4c0-.6-.4-1-1-1h-4c-.6 0-1 .4-1 1v3c0 .6.4 1 1 1h1c.6 0 1 .4 1 1H7c-.6 0-1 .4-1 1v4c0 .6.4 1 1 1h2.2l-2.9 5.8c-.3.6.1 1.2.7 1.2h6c.6 0 1-.4 1-1v-4c0-.6-.4-1-1-1H11.8l2.9-5.8c.3-.6-.1-1.2-.7-1.2h5c.6 0 1-.4 1-1v-2c0-.6-.4-1-1-1z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-wide flex items-center gap-2">
+              PEA กฟก.3 SMART DASHBOARD
+              <span className="bg-orange-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full animate-pulse">
+                Region 3
+              </span>
+            </h1>
+            <p className="text-xs text-purple-200">ระบบติดตามและวิเคราะห์สถานีไฟฟ้า การไฟฟ้าส่วนภูมิภาค เขต 3 (ภาคกลาง) นครปฐม</p>
+          </div>
+        </div>
+
+        {/* แถบตัวเชื่อมต่อข้อมูลดึงสด */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto max-w-lg">
+          <div className="relative flex-grow">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+              <svg className="w-4 h-4 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </span>
+            <input 
+              type="text" 
+              value={syncUrl} 
+              onChange={(e) => setSyncUrl(e.target.value)}
+              placeholder="วางลิงก์ Google Sheets..."
+              className="pl-9 pr-3 py-1.5 w-full bg-purple-950/60 border border-purple-800 rounded text-xs text-purple-100 placeholder-purple-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+            />
+          </div>
+          <button 
+            onClick={() => fetchGoogleSheetData(syncUrl)}
+            disabled={loading}
+            className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-xs px-4 py-1.5 rounded font-bold transition flex items-center justify-center gap-1 shrink-0 shadow-md"
+          >
+            {loading ? (
+              <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            ) : "ซิงค์ข้อมูลล่าสุด"}
+          </button>
+        </div>
+      </header>
+
+      {/* แถบแจ้งสถานะการเชื่อมต่อข้อมูล */}
+      <div className={`px-6 py-2 flex items-center justify-between text-xs border-b ${
+        syncStatus.success === true 
+          ? 'bg-emerald-50 text-emerald-800 border-emerald-100' 
+          : syncStatus.success === false 
+          ? 'bg-amber-50 text-amber-800 border-amber-100' 
+          : 'bg-purple-50 text-purple-800 border-purple-100'
+      }`}>
+        <div className="flex items-center gap-2">
+          <span className={`w-2.5 h-2.5 rounded-full ${syncStatus.success ? 'bg-emerald-500 animate-pulse' : 'bg-purple-600'}`} />
+          <span><b>สถานะข้อมูล:</b> {syncStatus.message}</span>
+        </div>
+        <div className="hidden sm:flex items-center gap-3">
+          <span>พบข้อมูลสถานีไฟฟ้าทั้งหมด: <b>{stations.length} แห่ง</b></span>
+          <span>กรองเหลือ: <b>{filteredStations.length} แห่ง</b></span>
+        </div>
+      </div>
+
+      {/* เมนูหลักการใช้งาน */}
+      <div className="bg-white border-b border-slate-200 px-6 py-1.5 flex justify-between items-center flex-wrap gap-2">
+        <div className="flex gap-1">
+          <button 
+            onClick={() => setActiveTab('dashboard')} 
+            className={`flex items-center gap-1 px-4 py-2 rounded text-sm font-semibold transition ${activeTab === 'dashboard' ? 'bg-purple-100 text-purple-800' : 'text-slate-600 hover:bg-slate-100'}`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
+            </svg>
+            แผงควบคุม (Dashboard)
+          </button>
+          <button 
+            onClick={() => setActiveTab('map')} 
+            className={`flex items-center gap-1 px-4 py-2 rounded text-sm font-semibold transition ${activeTab === 'map' ? 'bg-purple-100 text-purple-800' : 'text-slate-600 hover:bg-slate-100'}`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            แผนที่ภูมิศาสตร์ (Geographic Map)
+          </button>
+          <button 
+            onClick={() => setActiveTab('list')} 
+            className={`flex items-center gap-1 px-4 py-2 rounded text-sm font-semibold transition ${activeTab === 'list' ? 'bg-purple-100 text-purple-800' : 'text-slate-600 hover:bg-slate-100'}`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            รายการและเครื่องมือตาราง (Substation List)
+          </button>
+        </div>
+
+        <div className="flex gap-2">
+          <button 
+            onClick={() => { setFormMode('add'); resetForm(); setShowAddForm(true); }}
+            className="bg-purple-700 hover:bg-purple-800 text-white text-xs px-3 py-1.5 rounded font-bold flex items-center gap-1 shadow-sm transition"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+            </svg>
+            เพิ่มสถานีไฟฟ้า
+          </button>
+          <button 
+            onClick={handleExportCSV}
+            className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs px-3 py-1.5 rounded font-bold flex items-center gap-1 shadow-sm transition"
+          >
+            <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            ส่งออก CSV
+          </button>
+        </div>
+      </div>
+
+      {/* แดชบอร์ดหลักและโครงสร้างการกรองข้อมูล */}
+      <main className="flex-grow p-6 flex flex-col gap-6">
+
+        {/* บล็อกตัวกรองข้อมูลและค้นหาแบบ Quick Filters (แสดงในแถบแดชบอร์ด/ตาราง) */}
+        {activeTab !== 'map' && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-wrap items-center gap-4 justify-between">
+            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+              {/* ค้นหาข้อความ */}
+              <div className="relative w-full sm:w-64">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                  <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </span>
+                <input 
+                  type="text" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="ค้นหาชื่อสถานี, ตัวย่อ, โครงการ..."
+                  className="pl-9 pr-3 py-1.5 w-full border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-purple-600 focus:outline-none focus:border-purple-600"
+                />
+              </div>
+
+              {/* สังกัด/จังหวัด */}
+              <select 
+                value={filterAffiliation}
+                onChange={(e) => setFilterAffiliation(e.target.value)}
+                className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-purple-600"
+              >
+                <option value="all">แสดงทุกสังกัด/กฟจ.</option>
+                {affiliationsList.map(aff => (
+                  <option key={aff} value={aff}>{aff}</option>
+                ))}
+              </select>
+
+              {/* แรงดันไฟฟ้า */}
+              <select 
+                value={filterVoltage}
+                onChange={(e) => setFilterVoltage(e.target.value)}
+                className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-purple-600"
+              >
+                <option value="all">ระดับแรงดันทั้งหมด</option>
+                <option value="115/22 kV">115/22 kV</option>
+                <option value="22 kV">22 kV</option>
+              </select>
+
+              {/* ชนิดรูปแบบ */}
+              <select 
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-purple-600"
+              >
+                <option value="all">ทุกรูปแบบ (EGAT/PEA)</option>
+                <option value="EGAT">EGAT (กฟผ.)</option>
+                <option value="PEA">PEA (กฟภ.)</option>
+                <option value="Indoor">Indoor Substation</option>
+              </select>
+
+              {/* สถานะความปลอดภัย (ระดับโหลด) */}
+              <select 
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-purple-600"
+              >
+                <option value="all">สถานะโหลดทั้งหมด</option>
+                <option value="safe">ปลอดภัย (โหลด &lt; 60%)</option>
+                <option value="warning">เฝ้าระวัง (โหลด 60% - 80%)</option>
+                <option value="critical">เกินพิกัด (โหลด &gt;= 80%)</option>
+              </select>
+            </div>
+
+            {/* ปุ่มเคลียร์ตัวกรอง */}
+            <button 
+              onClick={() => {
+                setSearchTerm('');
+                setFilterAffiliation('all');
+                setFilterVoltage('all');
+                setFilterType('all');
+                setFilterStatus('all');
+              }}
+              className="text-purple-700 hover:text-purple-800 text-xs font-bold transition flex items-center gap-1"
+            >
+              รีเซ็ตตัวกรองทั้งหมด
+            </button>
+          </div>
+        )}
+
+        {/* แถบการวิเคราะห์และสรุปยอด (Dashboard) */}
+        {activeTab === 'dashboard' && (
+          <div className="flex flex-col gap-6">
+            
+            {/* บล็อกแจ้งเตือนเมื่อพบสถานี Overloaded (เกิน 80%) */}
+            {stats.criticalCount > 0 && (
+              <div className="bg-red-50 border-l-4 border-red-500 rounded-r-xl p-4 flex items-start gap-3 shadow-sm">
+                <div className="text-red-600 mt-0.5">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="flex-grow">
+                  <h4 className="font-bold text-red-800 text-sm">แจ้งเตือนระดับโหลดความปลอดภัย (Overload Warning)</h4>
+                  <p className="text-xs text-red-700">พบสถานีไฟฟ้า <b>{stats.criticalCount} สถานี</b> ที่มีปริมาณโหลดสะสม <b>เกินกว่า 80%</b> ของพิกัดหม้อแปลง กรุณาเร่งจัดทำแผนงานเพิ่มหรือแบ่งเบาโหลด!</p>
+                </div>
+                <button 
+                  onClick={() => setFilterStatus('critical')} 
+                  className="bg-red-200 hover:bg-red-300 text-red-900 text-xs px-3 py-1 rounded font-bold transition self-center shrink-0"
+                >
+                  ตรวจสอบดูลิสต์
+                </button>
+              </div>
+            )}
+
+            {/* การ์ดสถิติหลัก (KPI Grid) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* การ์ด 1: จำนวนสถานี */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center gap-4 hover:shadow transition duration-200">
+                <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-700 shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-400">สถานีไฟฟ้าในการดูแล</p>
+                  <p className="text-2xl font-black text-slate-800">{stats.total} <span className="text-xs font-medium text-slate-500">สถานี</span></p>
+                  <p className="text-[10px] text-slate-400 mt-1">จากทั้งหมดในเขต กฟก.3</p>
+                </div>
+              </div>
+
+              {/* การ์ด 2: กำลังไฟติดตั้ง */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center gap-4 hover:shadow transition duration-200">
+                <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-400">พิกัดกำลังส่งรวม</p>
+                  <p className="text-2xl font-black text-slate-800">{stats.totalCap} <span className="text-xs font-medium text-slate-500">MVA</span></p>
+                  <p className="text-[10px] text-emerald-600 mt-1 flex items-center gap-0.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" /> พร้อมจ่ายไฟเข้าระบบปกติ
+                  </p>
+                </div>
+              </div>
+
+              {/* การ์ด 3: โหลดสูงสุด */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center gap-4 hover:shadow transition duration-200">
+                <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-400">โหลดสูงสุด (Max Peak)</p>
+                  <p className="text-2xl font-black text-slate-800">{stats.totalMaxLoad} <span className="text-xs font-medium text-slate-500">MW</span></p>
+                  <p className="text-[10px] text-slate-400 mt-1">ความต้องการไฟฟ้าสูงสุดปัจจุบัน</p>
+                </div>
+              </div>
+
+              {/* การ์ด 4: เปอร์เซ็นต์โหลดเฉลี่ย */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center gap-4 hover:shadow transition duration-200">
+                <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-400">สัดส่วนโหลดใช้งานเฉลี่ย</p>
+                  <p className="text-2xl font-black text-slate-800">{stats.avgLoadPercent}%</p>
+                  <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+                    <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${stats.avgLoadPercent}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* แถบกราฟวิเคราะห์ข้อมูลด้วยเทคนิค SVG Dashboard Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* แผนภูมิ 1: 10 อันดับสถานีไฟฟ้าที่โหลดสูงที่สุด */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-orange-500" />
+                    10 อันดับสถานีไฟฟ้าที่โหลดสูงที่สุด (% Loading)
+                  </h3>
+                  <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">โหลดปัจจุบัน</span>
+                </div>
+                
+                {/* Visual SVG bar chart */}
+                <div className="space-y-3.5 mt-2">
+                  {[...stations]
+                    .sort((a,b) => b.max_load_percent - a.max_load_percent)
+                    .slice(0, 8)
+                    .map((st, index) => {
+                      let barColor = 'bg-emerald-500';
+                      let textColor = 'text-emerald-700';
+                      if (st.max_load_percent >= 80) {
+                        barColor = 'bg-rose-500';
+                        textColor = 'text-rose-700';
+                      } else if (st.max_load_percent >= 60) {
+                        barColor = 'bg-orange-500';
+                        textColor = 'text-orange-700';
+                      }
+
+                      return (
+                        <div key={st.id} className="flex flex-col gap-1">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-semibold text-slate-700">{index + 1}. {st.name} <span className="text-slate-400 font-normal">({st.abbr})</span></span>
+                            <span className={`font-bold ${textColor}`}>{st.max_load_percent}% ({st.max_load_mw} MW)</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden shadow-inner relative">
+                            <div 
+                              className={`${barColor} h-3 rounded-full transition-all duration-1000`} 
+                              style={{ width: `${Math.min(100, st.max_load_percent)}%` }} 
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* แผนภูมิ 2: สัดส่วนสถานีไฟฟ้าแยกตามจังหวัด/สังกัด */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded bg-purple-700" />
+                  การกระจายตัวของสถานีไฟฟ้าแยกตาม สังกัด/กฟจ.
+                </h3>
+
+                {/* Grid แสดงสถิติและเปรียบเทียบในรูปแบบ Donut/Bar สรุป */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+                  
+                  {/* รายชื่อสังกัดพร้อมจำนวนและกำลังส่ง */}
+                  <div className="space-y-3">
+                    {affiliationsList.map((aff, idx) => {
+                      const listInAff = stations.filter(s => s.affiliation === aff);
+                      const count = listInAff.length;
+                      const ratio = ((count / stations.length) * 100).toFixed(0);
+                      const colorHex = ['#7B1FA2', '#F57C00', '#0288D1', '#388E3C', '#E64A19'][idx % 5];
+                      
+                      return (
+                        <div key={aff} className="flex items-center justify-between text-xs border-b border-slate-100 pb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colorHex }} />
+                            <span className="font-semibold text-slate-700">{aff}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold text-slate-800">{count} สถานี</span>
+                            <span className="text-[10px] text-slate-400 block">{ratio}% ของทั้งหมด</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* SVG เปรียบเทียบสัดส่วนวงกลม */}
+                  <div className="flex justify-center relative py-4">
+                    <svg viewBox="0 0 100 100" className="w-40 h-40 transform -rotate-90">
+                      {/* สร้างวงสัดส่วนตามสถิติจริง */}
+                      {(() => {
+                        let accumulatedPercent = 0;
+                        return affiliationsList.map((aff, idx) => {
+                          const count = stations.filter(s => s.affiliation === aff).length;
+                          const percent = (count / stations.length) * 100;
+                          const colorHex = ['#7B1FA2', '#F57C00', '#0288D1', '#388E3C', '#E64A19'][idx % 5];
+                          
+                          // วาด Stroke Arc สำหรับพายพล็อต
+                          const dashArray = `${percent} ${100 - percent}`;
+                          const dashOffset = 100 - accumulatedPercent;
+                          accumulatedPercent += percent;
+
+                          return (
+                            <circle
+                              key={aff}
+                              cx="50"
+                              cy="50"
+                              r="35"
+                              fill="transparent"
+                              stroke={colorHex}
+                              strokeWidth="15"
+                              strokeDasharray={dashArray}
+                              strokeDashoffset={dashOffset}
+                            />
+                          );
+                        });
+                      })()}
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-xs text-slate-400">สถานีรวม</span>
+                      <span className="text-xl font-extrabold text-slate-800">{stations.length}</span>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* โครงสร้างแยกชนิดรูปแบบสถานี */}
+                <div className="mt-6 pt-5 border-t border-slate-100">
+                  <h4 className="text-xs font-bold text-slate-700 mb-3">จำแนกตาม ชนิด/รูปแบบ โครงสร้าง</h4>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    {['EGAT', 'PEA', 'Indoor'].map(t => {
+                      const count = stations.filter(s => s.type === t).length;
+                      return (
+                        <div key={t} className="bg-slate-50 rounded-lg p-2 border border-slate-100">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">{t}</span>
+                          <p className="text-lg font-black text-slate-800 mt-1">{count}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* ส่วนสรุปตารางสถานีไฟฟ้าล่าสุดด่วน */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded bg-purple-900" />
+                  รายการภาพรวมสถานีไฟฟ้า {filteredStations.length} แห่งในระบบ
+                </h3>
+                <button 
+                  onClick={() => setActiveTab('list')}
+                  className="text-xs font-bold text-purple-700 hover:underline"
+                >
+                  เปิดตารางแบบเต็ม &gt;
+                </button>
+              </div>
+
+              {/* ตารางแสดงผลแบบย่นย่อ */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                      <th className="py-2 px-3">ลําดับ</th>
+                      <th className="py-2 px-3">ชื่อสถานีไฟฟ้า</th>
+                      <th className="py-2 px-3">ตัวย่อ</th>
+                      <th className="py-2 px-3">ขนาด MVA</th>
+                      <th className="py-2 px-3">สังกัด/กฟจ.</th>
+                      <th className="py-2 px-3">โหลดใช้งานปัจจุบัน</th>
+                      <th className="py-2 px-3">โครงการ/แผนงาน</th>
+                      <th className="py-2 px-3">เครื่องมือ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStations.slice(0, 5).map(st => {
+                      let statusBadge = (
+                        <span className="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-[10px]">
+                          {st.max_load_percent}% ปลอดภัย
+                        </span>
+                      );
+                      if (st.max_load_percent >= 80) {
+                        statusBadge = (
+                          <span className="bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded text-[10px] animate-pulse">
+                            {st.max_load_percent}% วิกฤต
+                          </span>
+                        );
+                      } else if (st.max_load_percent >= 60) {
+                        statusBadge = (
+                          <span className="bg-orange-100 text-orange-800 font-bold px-2 py-0.5 rounded text-[10px]">
+                            {st.max_load_percent}% เฝ้าระวัง
+                          </span>
+                        );
+                      }
+
+                      return (
+                        <tr key={st.id} className="border-b border-slate-100 hover:bg-slate-50">
+                          <td className="py-2.5 px-3 font-semibold text-slate-500">{st.no}</td>
+                          <td className="py-2.5 px-3 font-bold text-slate-800">{st.name}</td>
+                          <td className="py-2.5 px-3 font-mono text-slate-600">{st.abbr}</td>
+                          <td className="py-2.5 px-3">{st.size}</td>
+                          <td className="py-2.5 px-3">{st.affiliation}</td>
+                          <td className="py-2.5 px-3">{statusBadge}</td>
+                          <td className="py-2.5 px-3 text-slate-500 truncate max-w-xs">{st.project || '-'}</td>
+                          <td className="py-2.5 px-3">
+                            <button 
+                              onClick={() => setSelectedStation(st)}
+                              className="text-purple-700 hover:text-purple-900 font-bold text-xs"
+                            >
+                              ตรวจสอบ
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* แถบแผนที่ภูมิศาสตร์ (Geographic Map Interface) */}
+        {activeTab === 'map' && (
+          <div className="flex-grow flex flex-col lg:flex-row gap-6">
+            
+            {/* กล่องแสดงสิทธิ์และข้อมูลอัพเดตด่วน */}
+            <div className="w-full lg:w-80 shrink-0 bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col gap-4">
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-sm">ค้นหาข้อมูลแผนที่</h3>
+                <p className="text-xs text-slate-400">กรองและแตะหมุดสถานีไฟฟ้าบนแผนที่จริงเพื่อแสดงผลนำทาง</p>
+              </div>
+
+              {/* ฟิลเตอร์เฉพาะในหน้าแผนที่เพื่อประหยัดพื้นที่ */}
+              <div className="space-y-3">
+                <label className="text-xs font-bold text-slate-600 block">ค้นหาตามชื่อสถานี</label>
+                <input 
+                  type="text" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="พิมพ์ค้นหาด่วน..."
+                  className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-purple-600 focus:outline-none"
+                />
+
+                <label className="text-xs font-bold text-slate-600 block">สังกัดจังหวัด</label>
+                <select 
+                  value={filterAffiliation}
+                  onChange={(e) => setFilterAffiliation(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-purple-600"
+                >
+                  <option value="all">แสดงทั้งหมด</option>
+                  {affiliationsList.map(aff => (
+                    <option key={aff} value={aff}>{aff}</option>
+                  ))}
+                </select>
+
+                <label className="text-xs font-bold text-slate-600 block">ระดับสถานะโหลด</label>
+                <select 
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-purple-600"
+                >
+                  <option value="all">ทั้งหมด</option>
+                  <option value="safe">ปลอดภัย (&lt; 60%)</option>
+                  <option value="warning">เฝ้าระวัง (60%-80%)</option>
+                  <option value="critical">เกินพิกัด (&gt;= 80%)</option>
+                </select>
+              </div>
+
+              {/* Legend คำอธิบายสี */}
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 text-xs space-y-2 mt-auto">
+                <span className="font-bold text-slate-700 block mb-1">ความหมายสีของสถานี</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-emerald-500" />
+                  <span>โหลดปลอดภัย (&lt; 60%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-orange-500" />
+                  <span>เฝ้าระวัง (60% - 80%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-rose-500" />
+                  <span>โหลดเกินพิกัด (&gt;= 80%)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* แผ่นป้ายแผนที่จริง */}
+            <div className="flex-grow bg-slate-100 rounded-xl overflow-hidden shadow-inner border border-slate-200 relative min-h-[450px]">
+              <div ref={mapRef} className="w-full h-full min-h-[500px] z-10" />
+            </div>
+
+          </div>
+        )}
+
+        {/* แถบตารางรายชื่อเต็มรูปแบบ (Substation List / Table) */}
+        {activeTab === 'list' && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+            <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-sm">ข้อมูลสรุปและสถานะทั้งหมด</h3>
+                <p className="text-xs text-slate-400">คลิกที่หัวตารางเพื่อจัดเรียงลำดับ หรือแตะปุ่มเพื่อตรวจสอบลึก</p>
+              </div>
+              <div className="text-xs text-slate-400">
+                แสดงผล <b>{sortedStations.length}</b> จาก <b>{stations.length}</b> รายการสถานีไฟฟ้า
+              </div>
+            </div>
+
+            {/* ตารางเต็มพิกัด */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 select-none">
+                    <th onClick={() => requestSort('no')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
+                      ลําดับ {sortConfig.key === 'no' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                    </th>
+                    <th onClick={() => requestSort('name')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
+                      ชื่อสถานีไฟฟ้า {sortConfig.key === 'name' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                    </th>
+                    <th onClick={() => requestSort('abbr')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
+                      ตัวย่อ {sortConfig.key === 'abbr' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                    </th>
+                    <th onClick={() => requestSort('affiliation')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
+                      สังกัด {sortConfig.key === 'affiliation' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                    </th>
+                    <th onClick={() => requestSort('size')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
+                      ขนาดหม้อแปลง {sortConfig.key === 'size' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                    </th>
+                    <th onClick={() => requestSort('max_load_mw')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
+                      โหลดใช้งานสูงสุด {sortConfig.key === 'max_load_mw' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                    </th>
+                    <th onClick={() => requestSort('max_load_percent')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
+                      สัดส่วนโหลดสูงสุด {sortConfig.key === 'max_load_percent' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
+                    </th>
+                    <th className="py-3 px-4">ชนิด - รูปแบบ</th>
+                    <th className="py-3 px-4">วันจ่ายไฟ</th>
+                    <th className="py-3 px-4 text-center">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedStations.length === 0 ? (
+                    <tr>
+                      <td colSpan="10" className="py-8 text-center text-slate-400 font-bold">
+                        ไม่พบข้อมูลตามตัวกรองที่เลือก
+                      </td>
+                    </tr>
+                  ) : (
+                    sortedStations.map((st, idx) => {
+                      let loadColor = 'text-emerald-700 bg-emerald-100';
+                      if (st.max_load_percent >= 80) loadColor = 'text-rose-700 bg-rose-100 animate-pulse';
+                      else if (st.max_load_percent >= 60) loadColor = 'text-orange-700 bg-orange-100';
+
+                      return (
+                        <tr key={st.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3 px-4 font-bold text-slate-500">{st.no}</td>
+                          <td className="py-3 px-4 font-bold text-slate-800">{st.name}</td>
+                          <td className="py-3 px-4 font-mono text-slate-600 font-semibold">{st.abbr}</td>
+                          <td className="py-3 px-4">{st.affiliation}</td>
+                          <td className="py-3 px-4">{st.size}</td>
+                          <td className="py-3 px-4 font-bold">{st.max_load_mw} MW</td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${loadColor}`}>
+                              {st.max_load_percent}%
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-slate-500 bg-slate-100 px-2 py-0.5 rounded text-[10px] font-medium">{st.type}</span>
+                          </td>
+                          <td className="py-3 px-4 text-slate-500">{st.power_date || '-'}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <button 
+                                onClick={() => setSelectedStation(st)}
+                                className="text-purple-700 hover:text-purple-950 font-bold px-2 py-1 hover:bg-purple-50 rounded"
+                              >
+                                รายละเอียด
+                              </button>
+                              <button 
+                                onClick={() => handleEditClick(st)}
+                                className="text-amber-600 hover:text-amber-800 font-bold px-2 py-1 hover:bg-amber-50 rounded"
+                              >
+                                แก้ไข
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+      </main>
+
+      {/* ส่วนป๊อปอัพ / โมดอล แสดงรายละเอียดสถานีเชิงลึก */}
+      {selectedStation && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+            
+            {/* แถบหัวโมดอล */}
+            <div className={`bg-gradient-to-r ${THEME.primary} p-6 text-white flex justify-between items-start shrink-0`}>
+              <div>
+                <span className="bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                  {selectedStation.type} Substation
+                </span>
+                <h2 className="text-xl font-bold mt-1.5 flex items-center gap-2">
+                  สถานีไฟฟ้า: {selectedStation.name}
+                  <span className="text-purple-200 font-mono text-base font-normal">({selectedStation.abbr})</span>
+                </h2>
+                <p className="text-xs text-purple-200 mt-1">สังกัด: {selectedStation.affiliation} | เขตการจ่ายไฟ กฟก.3</p>
+              </div>
+              <button 
+                onClick={() => setSelectedStation(null)}
+                className="bg-white/10 hover:bg-white/20 text-white p-1 rounded-full transition"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* เนื้อหาโมดอล */}
+            <div className="p-6 overflow-y-auto space-y-6">
+              
+              {/* รายละเอียดเกจระดับโหลดไฟฟ้าแบบ Visual SVG */}
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-between gap-6">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">เปอร์เซ็นต์โหลดปัจจุบัน (Peak Load %)</h4>
+                  <p className="text-3xl font-black mt-1 text-slate-800">{selectedStation.max_load_percent}%</p>
+                  <p className="text-xs text-slate-400 mt-1">ความต้องการใช้งานสูงสุด {selectedStation.max_load_mw} MW</p>
+                </div>
+                
+                {/* วงแหวนเปอร์เซ็นต์โหลด */}
+                <div className="relative w-20 h-20">
+                  <svg className="w-full h-full" viewBox="0 0 36 36">
+                    <path
+                      className="text-slate-200"
+                      strokeWidth="3.5"
+                      stroke="currentColor"
+                      fill="none"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                    <path
+                      className={
+                        selectedStation.max_load_percent >= 80 ? "text-rose-500" :
+                        selectedStation.max_load_percent >= 60 ? "text-orange-
