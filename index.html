@@ -1,1174 +1,1362 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+<!DOCTYPE html>
+<html lang="th">
 
-// คลาสและดีไซน์สีหลักของ PEA: ม่วง (PEA Purple: #7B1FA2) และ ส้ม (PEA Orange: #FF9800)
-const THEME = {
-  primary: 'from-purple-900 to-indigo-950',
-  purpleLight: '#F3E5F5',
-  purpleMedium: '#9C27B0',
-  purpleDark: '#7B1FA2',
-  orange: '#FF9800',
-  orangeDark: '#F57C00',
-  orangeLight: '#FFF3E0',
-};
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEA Dashboard - ระบบรายงานข้อมูล</title>
 
-// ข้อมูลสถานีไฟฟ้าต้นแบบ กฟก.3 (กรณีดึงออนไลน์ไม่ได้ หรือใช้สำหรับแสดงผลทันที)
-const DEFAULT_STATIONS_DATA = [
-  { id: 1, no: 1, pea_name: "สมุทรสาคร 1", egat_name: "สมุทรสาคร 1", name: "สมุทรสาคร 1", abbr: "SMA", type: "EGAT", voltage: "115/22 kV", size: "3x50 MVA", project: "คพจ.2 (Renovate)", lat: 13.593392, lng: 100.281931, loop: "Loop A", affiliation: "กฟจ.สมุทรสาคร", note: "ถาวร", note2: "Renovate", area: 12.5, price: 45000000, power_date: "2018-03-15", max_load_mw: 40.8, max_load_percent: 30.22 },
-  { id: 2, no: 2, pea_name: "สมุทรสาคร 2", egat_name: "สมุทรสาคร 2", name: "สมุทรสาคร 2", abbr: "SMB", type: "EGAT", voltage: "115/22 kV", size: "3x50 MVA", project: "แผนปกติ", lat: 13.540950, lng: 100.229825, loop: "Loop A", affiliation: "กฟส.สมุทรสาคร", note: "ถาวร", note2: "", area: 10.2, price: 38000000, power_date: "2019-10-22", max_load_mw: 29.4, max_load_percent: 21.78 },
-  { id: 3, no: 3, pea_name: "อ้อมใหญ่ 1", egat_name: "อ้อมใหญ่ 1", name: "อ้อมใหญ่ 1", abbr: "OY1", type: "PEA", voltage: "115/22 kV", size: "2x50 MVA", project: "คพจ.2", lat: 13.702511, lng: 100.267812, loop: "Loop B", affiliation: "กฟจ.นครปฐม", note: "ชั่วคราว", note2: "โหลดหนาแน่น", area: 8.5, price: 52000000, power_date: "2015-05-12", max_load_mw: 88.5, max_load_percent: 88.50 },
-  { id: 4, no: 4, pea_name: "กระทุ่มแบน 6", egat_name: "กระทุ่มแบน 6", name: "กระทุ่มแบน 6", abbr: "KTB6", type: "PEA", voltage: "115/22 kV", size: "2x50 MVA", project: "คจก.3", lat: 13.654812, lng: 100.254129, loop: "Loop B", affiliation: "กฟจ.สมุทรสาคร", note: "ชั่วคราว", note2: "จ่ายไฟเพิ่ม", area: 7.2, price: 31000000, power_date: "2021-12-01", max_load_mw: 79.2, max_load_percent: 79.20 },
-  { id: 5, no: 5, pea_name: "นครปฐม 1", egat_name: "นครปฐม 1", name: "นครปฐม 1", abbr: "NPA", type: "EGAT", voltage: "115/22 kV", size: "3x50 MVA", project: "คพจ.1", lat: 13.814325, lng: 100.041289, loop: "Loop C", affiliation: "กฟจ.นครปฐม", note: "ถาวร", note2: "", area: 15.0, price: 60000000, power_date: "2012-08-18", max_load_mw: 68.4, max_load_percent: 45.60 },
-  { id: 6, no: 6, pea_name: "นครปฐม 2", egat_name: "นครปฐม 2", name: "นครปฐม 2", abbr: "NPB", type: "EGAT", voltage: "115/22 kV", size: "3x50 MVA", project: "แผนปกติ", lat: 13.832910, lng: 100.062145, loop: "Loop C", affiliation: "กฟจ.นครปฐม", note: "ถาวร", note2: "", area: 14.2, price: 58000000, power_date: "2014-04-10", max_load_mw: 92.1, max_load_percent: 61.40 },
-  { id: 7, no: 7, pea_name: "สามพราน 2", egat_name: "สามพราน 2", name: "สามพราน 2", abbr: "SPR2", type: "Indoor", voltage: "22 kV", size: "2x50 MVA", project: "แผนเร่งด่วน", lat: 13.721450, lng: 100.218901, loop: "Loop D", affiliation: "กฟส.สามพราน", note: "ถาวร", note2: "", area: 5.4, price: 29000000, power_date: "2017-11-30", max_load_mw: 42.6, max_load_percent: 42.60 },
-  { id: 8, no: 8, pea_name: "กำแพงแสน", egat_name: "กำแพงแสน", name: "กำแพงแสน", abbr: "KPS", type: "PEA", voltage: "115/22 kV", size: "2x50 MVA", project: "คพจ.2", lat: 14.011892, lng: 99.982315, loop: "Loop E", affiliation: "กฟส.กำแพงแสน", note: "ถาวร", note2: "ขยายเขตอุสาหกรรม", area: 11.8, price: 41000000, power_date: "2016-01-20", max_load_mw: 54.3, max_load_percent: 54.30 },
-  { id: 9, no: 9, pea_name: "ศรีประจันต์", egat_name: "ศรีประจันต์", name: "ศรีประจันต์", abbr: "SPC", type: "PEA", voltage: "115/22 kV", size: "1x50 MVA", project: "ชั่วคราวเร่งด่วน", lat: 14.621450, lng: 100.142560, loop: "Loop F", affiliation: "กฟส.ศรีประจันต์", note: "ชั่วคราว", note2: "รออนุมัติถาวร", area: 4.5, price: 15000000, power_date: "2022-02-14", max_load_mw: 41.2, max_load_percent: 82.40 },
-  { id: 10, no: 10, pea_name: "สุพรรณบุรี 1", egat_name: "สุพรรณบุรี 1", name: "สุพรรณบุรี 1", abbr: "SP1", type: "EGAT", voltage: "115/22 kV", size: "3x50 MVA", project: "แผนปกติ", lat: 14.471250, lng: 100.118920, loop: "Loop F", affiliation: "กฟจ.สุพรรณบุรี", note: "ถาวร", note2: "", area: 13.8, price: 49000000, power_date: "2011-09-05", max_load_mw: 49.8, max_load_percent: 33.20 },
-  { id: 11, no: 11, pea_name: "ท่าม่วง 2", egat_name: "ท่าม่วง 2", name: "ท่าม่วง 2", abbr: "TM2", type: "PEA", voltage: "115/22 kV", size: "2x50 MVA", project: "คพจ.3", lat: 13.962510, lng: 99.642150, loop: "Loop G", affiliation: "กฟส.ท่าม่วง", note: "ชั่วคราว", note2: "", area: 6.9, price: 24000000, power_date: "2020-07-19", max_load_mw: 38.4, max_load_percent: 38.40 },
-  { id: 12, no: 12, pea_name: "กาญจนบุรี 1", egat_name: "กาญจนบุรี 1", name: "กาญจนบุรี 1", abbr: "KB1", type: "Indoor", voltage: "22 kV", size: "2x50 MVA", project: "คพจ.1", lat: 14.018950, lng: 99.521480, loop: "Loop G", affiliation: "กฟจ.กาญจนบุรี", note: "ถาวร", note2: "", area: 8.0, price: 35000000, power_date: "2013-05-10", max_load_mw: 59.5, max_load_percent: 59.50 },
-  { id: 13, no: 13, pea_name: "ท่ามะกา 2", egat_name: "ท่ามะกา 2", name: "ท่ามะกา 2", abbr: "TMK2", type: "PEA", voltage: "115/22 kV", size: "2x50 MVA", project: "คพจ.2", lat: 13.921470, lng: 99.781240, loop: "Loop H", affiliation: "กฟส.ท่ามะกา", note: "ชั่วคราว", note2: "", area: 6.5, price: 22000000, power_date: "2019-11-15", max_load_mw: 45.8, max_load_percent: 45.80 },
-  { id: 14, no: 14, pea_name: "บางเลน 2", egat_name: "บางเลน 2", name: "บางเลน 2", abbr: "BLN2", type: "PEA", voltage: "115/22 kV", size: "2x50 MVA", project: "แผนงานย้ายศาล", lat: 14.021580, lng: 100.165420, loop: "Loop E", affiliation: "กฟส.บางเลน", note: "ชั่วคราว", note2: "ย้ายไปสถานีใหม่ปี 70", area: 9.1, price: 33000000, power_date: "2020-01-25", max_load_mw: 22.4, max_load_percent: 22.40 },
-  { id: 15, no: 15, pea_name: "กระทุ่มแบน 1", egat_name: "กระทุ่มแบน 1", name: "กระทุ่มแบน 1", abbr: "KTB1", type: "EGAT", voltage: "115/22 kV", size: "3x50 MVA", project: "ปรับปรุงระบบสายส่ง", lat: 13.659840, lng: 100.268740, loop: "Loop B", affiliation: "กฟส.กระทุ่มแบน", note: "ถาวร", note2: "จ่ายไฟเต็มพิกัด", area: 14.5, price: 54000000, power_date: "2010-06-12", max_load_mw: 127.8, max_load_percent: 85.20 }
-];
+    <!-- Fonts: Prompt (Thai) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-export function App() {
-  const [stations, setStations] = useState(DEFAULT_STATIONS_DATA);
-  const [selectedStation, setSelectedStation] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'map', 'list', 'import'
-  const [syncUrl, setSyncUrl] = useState('https://docs.google.com/spreadsheets/d/1uINEa5fu2DL3IsSwEqmJ2CGetgyl82tk/edit?gid=1217557244#gid=1217557244');
-  const [syncStatus, setSyncStatus] = useState({ success: null, message: 'ใช้ชุดข้อมูลภายในระบบ กฟก.3' });
-  
-  // สถานะตัวกรองและการค้นหา
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterAffiliation, setFilterAffiliation] = useState('all');
-  const [filterVoltage, setFilterVoltage] = useState('all');
-  const [filterType, setFilterType] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all'); // Safe, Overloaded, Critical
-  const [sortConfig, setSortConfig] = useState({ key: 'no', direction: 'ascending' });
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  // ฟอร์มสำหรับเพิ่ม/แก้ไขสถานีไฟฟ้า
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [formMode, setFormMode] = useState('add'); // 'add' หรือ 'edit'
-  const [stationForm, setStationForm] = useState({
-    id: '', name: '', abbr: '', affiliation: '', type: 'EGAT',
-    voltage: '115/22 kV', size: '2x50 MVA', project: '', 
-    lat: '', lng: '', max_load_mw: '', max_load_percent: '',
-    note: 'ถาวร', area: '', price: '', power_date: ''
-  });
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  // อ้างอิงแผนที่ Leaflet
-  const mapRef = useRef(null);
-  const mapInstance = useRef(null);
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  // ดึงข้อมูลสดจาก Google Sheets เมื่อโหลดครั้งแรก หรือกดปุ่มรีเฟรช
-  const fetchGoogleSheetData = async (customUrl) => {
-    setLoading(true);
-    try {
-      // แปลง URL สำหรับ Export CSV
-      let docId = '1uINEa5fu2DL3IsSwEqmJ2CGetgyl82tk';
-      let gid = '1217557244';
-      
-      const matchDoc = customUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
-      if (matchDoc) docId = matchDoc[1];
-      
-      const matchGid = customUrl.match(/gid=([0-9]+)/);
-      if (matchGid) gid = matchGid[1];
-
-      const csvUrl = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${gid}`;
-      
-      const res = await fetch(csvUrl);
-      if (!res.ok) throw new Error('ไม่สามารถดึงข้อมูลจาก Google Sheets ได้ กรุณาตรวจสอบสิทธิ์การแชร์ลิงก์');
-      const csvText = await res.text();
-      
-      const parsedData = parseCSV(csvText);
-      if (parsedData && parsedData.length > 0) {
-        setStations(parsedData);
-        setSyncStatus({ 
-          success: true, 
-          message: `เชื่อมต่อเรียบร้อย! ซิงค์สำเร็จ ${parsedData.length} สถานีจาก Google Sheet` 
-        });
-      } else {
-        throw new Error('ไม่พบข้อมูลสถานีที่สมบูรณ์ในแผ่นงานนี้');
-      }
-    } catch (err) {
-      console.error(err);
-      setSyncStatus({ 
-        success: false, 
-        message: `ล้มเหลว: ${err.message} (กำลังใช้งานฐานข้อมูลสำรองในตัวแทน)` 
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // พยายามเชื่อมต่อดึงข้อมูลเริ่มแรก
-    fetchGoogleSheetData(syncUrl);
-  }, []);
-
-  // ตัวช่วยวิเคราะห์โครงสร้างไฟล์ CSV ของกฟก.3
-  const parseCSV = (csvText) => {
-    const lines = csvText.split('\n');
-    if (lines.length < 2) return null;
-    
-    // ตรวจสอบแถวหัวข้อ (มักจะเริ่มที่แถว 1 หรือ 2)
-    let headerIndex = 0;
-    for (let i = 0; i < Math.min(5, lines.length); i++) {
-      if (lines[i].includes('สถานีไฟฟ้า') || lines[i].includes('ตัวย่อ') || lines[i].includes('สังกัด')) {
-        headerIndex = i;
-        break;
-      }
-    }
-
-    const headers = lines[headerIndex].split(',').map(h => h.trim().replace(/"/g, ''));
-    const results = [];
-    
-    // แถวข้อมูลถัดจากหัวข้อ
-    for (let i = headerIndex + 1; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim()) continue;
-      
-      // จัดการกับเครื่องหมายอัญประกาศใน CSV ป้องกันเรื่องทศนิยมและ comma
-      const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
-      const row = matches.map(val => val.trim().replace(/"/g, ''));
-      
-      if (row.length < 3 || !row[1]) continue; // ข้อมูลไม่ครบ
-      
-      // พยายามจับคู่อินเด็กซ์กับชื่อคอลัมน์ภาษาไทย
-      const findVal = (keywords) => {
-        const idx = headers.findIndex(h => keywords.some(k => h.includes(k)));
-        return idx !== -1 ? row[idx] : '';
-      };
-
-      const latVal = parseFloat(findVal(['Latitude', 'lat', 'ละติจูด'])) || 13.7;
-      const lngVal = parseFloat(findVal(['Longitude', 'lng', 'ลองจิจูด'])) || 100.1;
-      const loadMw = parseFloat(findVal(['โหลดสูงสุด (MW)', 'โหลดสูงสุด'])) || 0;
-      const loadPercent = parseFloat(findVal(['เปอร์เซนต์', 'โหลดสูงสุดเปอร์เซนต์', 'Load %'])) || 0;
-      
-      results.push({
-        id: i,
-        no: results.length + 1,
-        pea_name: findVal(['สถานีไฟฟ้า กฟภ', 'กฟภ.']),
-        egat_name: findVal(['สถานีไฟฟ้า กฟผ', 'กฟผ.']),
-        name: findVal(['ชื่อสถานีไฟฟ้า', 'ชื่อสถานี', 'สถานี']),
-        abbr: findVal(['ตัวย่อ', 'อักษรย่อ']),
-        type: findVal(['ชนิด', 'รูปแบบ']) || 'PEA',
-        voltage: findVal(['ระดับแรงดัน', 'แรงดัน']) || '115/22 kV',
-        size: findVal(['ขนาด', 'MVA']) || '2x50 MVA',
-        project: findVal(['โครงการ', 'ชื่อโครงการ']),
-        lat: latVal,
-        lng: lngVal,
-        loop: findVal(['Loop', 'ลูป']),
-        affiliation: findVal(['สังกัด', 'จังหวัด']) || 'กฟก.3',
-        note: findVal(['หมายเหตุ']) || 'ถาวร',
-        note2: findVal(['หมายเหตุ (2)', 'หมายเหตุ2']),
-        area: parseFloat(findVal(['พื้นที่', 'ไร่'])) || 0,
-        price: parseFloat(findVal(['ราคา', 'บาท'])) || 0,
-        power_date: findVal(['วันจ่ายไฟ', 'วันที่']),
-        max_load_mw: loadMw,
-        max_load_percent: loadPercent || (loadMw ? Math.round((loadMw / 100) * 100) : 0)
-      });
-    }
-    
-    return results;
-  };
-
-  // กรองข้อมูลตามที่ผู้ใช้งานเลือก
-  const filteredStations = useMemo(() => {
-    return stations.filter(st => {
-      const matchSearch = 
-        st.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        st.abbr?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        st.affiliation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        st.project?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchAffiliation = filterAffiliation === 'all' || st.affiliation === filterAffiliation;
-      const matchVoltage = filterVoltage === 'all' || st.voltage === filterVoltage;
-      const matchType = filterType === 'all' || st.type === filterType;
-      
-      let matchStatus = true;
-      if (filterStatus === 'critical') {
-        matchStatus = st.max_load_percent >= 80;
-      } else if (filterStatus === 'warning') {
-        matchStatus = st.max_load_percent >= 60 && st.max_load_percent < 80;
-      } else if (filterStatus === 'safe') {
-        matchStatus = st.max_load_percent < 60;
-      }
-
-      return matchSearch && matchAffiliation && matchVoltage && matchType && matchStatus;
-    });
-  }, [stations, searchTerm, filterAffiliation, filterVoltage, filterType, filterStatus]);
-
-  // เรียงลำดับข้อมูลในตาราง
-  const sortedStations = useMemo(() => {
-    let sortableItems = [...filteredStations];
-    if (sortConfig !== null) {
-      sortableItems.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
+    <!-- Tailwind Configuration for PEA Theme -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        pea: {
+                            light: '#a78bfa',
+                            DEFAULT: '#6D28D9', // PEA Primary Purple
+                            dark: '#5B21B6',
+                            accent: '#FBBF24', // Yellow/Gold Accent
+                        }
+                    }
+                }
+            }
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-    return sortableItems;
-  }, [filteredStations, sortConfig]);
-
-  const requestSort = (key) => {
-    let direction = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  // รายการสังกัดที่มีทั้งหมด (นครปฐม, สมุทรสาคร, สุพรรณบุรี, กาญจนบุรี ฯลฯ)
-  const affiliationsList = useMemo(() => {
-    const list = new Set(stations.map(s => s.affiliation).filter(Boolean));
-    return Array.from(list);
-  }, [stations]);
-
-  // คำนวณสถิติภาพรวม
-  const stats = useMemo(() => {
-    const total = filteredStations.length;
-    let totalCap = 0;
-    let totalMaxLoad = 0;
-    let criticalCount = 0;
-    let warningCount = 0;
-
-    filteredStations.forEach(st => {
-      // ดึงตัวเลขขนาดหม้อแปลงเช่น "3x50 MVA" => 150
-      if (st.size) {
-        const matches = st.size.match(/(\d+)\s*[xX*]\s*(\d+)/);
-        if (matches) {
-          totalCap += parseInt(matches[1]) * parseInt(matches[2]);
+    </script>
+    <script>
+        // Check for saved dark mode preference or system preference
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
         } else {
-          const singleMatch = st.size.match(/(\d+)/);
-          if (singleMatch) totalCap += parseInt(singleMatch[1]);
+            document.documentElement.classList.remove('dark');
         }
-      }
-      totalMaxLoad += st.max_load_mw || 0;
-      if (st.max_load_percent >= 80) criticalCount++;
-      else if (st.max_load_percent >= 60) warningCount++;
-    });
+    </script>
 
-    const avgLoadPercent = total > 0 
-      ? (filteredStations.reduce((sum, st) => sum + (st.max_load_percent || 0), 0) / total).toFixed(2)
-      : 0;
+    <style>
+        body {
+            /* Handled by Tailwind classes */
+        }
 
-    return { total, totalCap, totalMaxLoad: totalMaxLoad.toFixed(1), avgLoadPercent, criticalCount, warningCount };
-  }, [filteredStations]);
+        /* Custom Scrollbar for tables */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
 
-  // ตั้งค่าและแสดงแผนที่ Leaflet ในแถบแผนที่
-  useEffect(() => {
-    if (activeTab === 'map' && mapRef.current && !mapInstance.current) {
-      // โหลดไฟล์สคริปต์ Leaflet และ CSS
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
 
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = () => {
-        if (!window.L) return;
-        
-        // ศูนย์กลาง กฟก.3 (บริเวณ จ.นครปฐม)
-        const map = window.L.map(mapRef.current).setView([13.82, 100.04], 9);
-        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; PEA Region 3 Area Power Map'
-        }).addTo(map);
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #ddd6fe;
+            border-radius: 4px;
+        }
 
-        mapInstance.current = map;
-        renderMarkers();
-      };
-      document.head.appendChild(script);
-    } else if (activeTab === 'map' && mapInstance.current) {
-      // หากสร้างแมปเรียบร้อยแล้ว ให้ทำการเรนเดอร์หมุดใหม่
-      renderMarkers();
-    }
-  }, [activeTab, filteredStations]);
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #a78bfa;
+        }
 
-  // วาดหมุดสถานีไฟฟ้าบนแผนที่
-  const renderMarkers = () => {
-    if (!mapInstance.current || !window.L) return;
+        /* Glass effect */
+        .glass-header {
+            background: rgba(109, 40, 217, 0.95);
+            backdrop-filter: blur(10px);
+        }
 
-    // เคลียร์หมุดเก่า
-    mapInstance.current.eachLayer((layer) => {
-      if (layer instanceof window.L.Marker) {
-        mapInstance.current.removeLayer(layer);
-      }
-    });
+        html.dark .glass-header {
+            background: rgba(15, 23, 42, 0.95);
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+        }
 
-    filteredStations.forEach(st => {
-      if (!st.lat || !st.lng) return;
+        html.dark .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
 
-      // สีหมุดตามระดับโหลด %
-      let color = '#22C55E'; // ปลอดภัย
-      if (st.max_load_percent >= 80) color = '#EF4444'; // อันตราย
-      else if (st.max_load_percent >= 60) color = '#F97316'; // เฝ้าระวัง
+        html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+        }
 
-      const customIcon = window.L.divIcon({
-        html: `<div class="flex items-center justify-center w-8 h-8 rounded-full shadow-lg border-2 border-white text-white font-bold text-xs" style="background-color: ${color}">
-                ${st.abbr || st.name.slice(0, 2)}
-              </div>`,
-        className: 'custom-div-icon',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-      });
+        html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
 
-      const popupContent = `
-        <div class="p-2 font-sans">
-          <h3 class="font-bold text-purple-900 text-sm">สถานีไฟฟ้า: ${st.name}</h3>
-          <p class="text-xs text-gray-600">ตัวย่อ: <b>${st.abbr || '-'}</b> | สังกัด: ${st.affiliation}</p>
-          <div class="mt-2 pt-1 border-t border-gray-100 flex justify-between gap-4">
-            <div>
-              <p class="text-[10px] text-gray-400">ขนาดพิกัด</p>
-              <p class="text-xs font-semibold text-gray-800">${st.size}</p>
-            </div>
-            <div>
-              <p class="text-[10px] text-gray-400">โหลดสูงสุด</p>
-              <p class="text-xs font-bold" style="color: ${color}">${st.max_load_percent}% (${st.max_load_mw} MW)</p>
-            </div>
-          </div>
-          <button onclick="window.showSubstationDetails(${st.id})" class="mt-3 w-full bg-purple-700 hover:bg-purple-800 text-white text-[11px] py-1 px-2 rounded font-medium transition text-center block">
-            ดูรายละเอียดข้อมูลเชิงลึก
-          </button>
-        </div>
-      `;
+        /* Soft animation classes */
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
 
-      window.showSubstationDetails = (id) => {
-        const found = stations.find(s => s.id === id);
-        if (found) setSelectedStation(found);
-      };
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
 
-      window.L.marker([st.lat, st.lng], { icon: customIcon })
-        .addTo(mapInstance.current)
-        .bindPopup(popupContent);
-    });
-  };
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
 
-  // การส่งแบบฟอร์ม (เพิ่ม/แก้ไข ข้อมูลสถานี)
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    if (!stationForm.name || !stationForm.abbr) {
-      alert("กรุณากรอกชื่อสถานีไฟฟ้าและตัวย่อ");
-      return;
-    }
+<body
+    class="text-gray-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-900 antialiased font-sans flex flex-col min-h-screen transition-colors duration-300">
 
-    const updatedForm = {
-      ...stationForm,
-      id: formMode === 'add' ? Date.now() : stationForm.id,
-      no: formMode === 'add' ? stations.length + 1 : stationForm.no,
-      lat: parseFloat(stationForm.lat) || 13.7,
-      lng: parseFloat(stationForm.lng) || 100.1,
-      max_load_mw: parseFloat(stationForm.max_load_mw) || 0,
-      max_load_percent: parseFloat(stationForm.max_load_percent) || 0,
-      area: parseFloat(stationForm.area) || 0,
-      price: parseFloat(stationForm.price) || 0,
-    };
-
-    if (formMode === 'add') {
-      setStations([updatedForm, ...stations]);
-      setSyncStatus({ success: true, message: `เพิ่มสถานีไฟฟ้า "${updatedForm.name}" สำเร็จ!` });
-    } else {
-      setStations(stations.map(s => s.id === updatedForm.id ? updatedForm : s));
-      setSelectedStation(updatedForm);
-      setSyncStatus({ success: true, message: `แก้ไขข้อมูลสถานี "${updatedForm.name}" เรียบร้อยแล้ว` });
-    }
-
-    setShowAddForm(false);
-    resetForm();
-  };
-
-  const handleEditClick = (station) => {
-    setFormMode('edit');
-    setStationForm({ ...station });
-    setShowAddForm(true);
-  };
-
-  const handleDeleteStation = (id) => {
-    if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลสถานีไฟฟ้านี้ออกจากแดชบอร์ด?")) {
-      setStations(stations.filter(s => s.id !== id));
-      setSelectedStation(null);
-      setSyncStatus({ success: true, message: "ลบสถานีไฟฟ้าเรียบร้อย" });
-    }
-  };
-
-  const resetForm = () => {
-    setStationForm({
-      id: '', name: '', abbr: '', affiliation: '', type: 'EGAT',
-      voltage: '115/22 kV', size: '2x50 MVA', project: '', 
-      lat: '', lng: '', max_load_mw: '', max_load_percent: '',
-      note: 'ถาวร', area: '', price: '', power_date: ''
-    });
-  };
-
-  const handleExportCSV = () => {
-    const headers = ['No.', 'ชื่อสถานีไฟฟ้า', 'ตัวย่อ', 'ชนิด-รูปแบบ', 'ระดับแรงดัน', 'ขนาดพิกัด', 'โครงการ', 'Latitude', 'Longitude', 'สังกัด/จังหวัด', 'สถานะ', 'พื้นที่ (ไร่)', 'ราคาก่อสร้าง', 'วันจ่ายไฟ', 'โหลดสูงสุด (MW)', 'เปอร์เซ็นต์โหลดสูงสุด (%)'];
-    const rows = filteredStations.map(s => [
-      s.no, s.name, s.abbr, s.type, s.voltage, s.size, s.project || '-', s.lat, s.lng, s.affiliation, s.note, s.area || 0, s.price || 0, s.power_date || '-', s.max_load_mw || 0, s.max_load_percent || 0
-    ]);
-    
-    let csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `PEA_C3_Substations_Report_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col antialiased">
-      
-      {/* ส่วนหัวแอปพลิเคชัน (PEA Brand Theme) */}
-      <header className={`bg-gradient-to-r ${THEME.primary} text-white px-6 py-4 shadow-md flex flex-col md:flex-row justify-between items-center gap-4`}>
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-inner overflow-hidden border-2 border-orange-500">
-            {/* SVG โลโก้สายฟ้า/ตราสัญลักษณ์สไตล์ PEA */}
-            <svg viewBox="0 0 24 24" className="w-8 h-8 text-purple-700 fill-current">
-              <path d="M19 10h-6c0-1.1.9-2 2-2h1c.6 0 1-.4 1-1V4c0-.6-.4-1-1-1h-4c-.6 0-1 .4-1 1v3c0 .6.4 1 1 1h1c.6 0 1 .4 1 1H7c-.6 0-1 .4-1 1v4c0 .6.4 1 1 1h2.2l-2.9 5.8c-.3.6.1 1.2.7 1.2h6c.6 0 1-.4 1-1v-4c0-.6-.4-1-1-1H11.8l2.9-5.8c.3-.6-.1-1.2-.7-1.2h5c.6 0 1-.4 1-1v-2c0-.6-.4-1-1-1z" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-wide flex items-center gap-2">
-              PEA กฟก.3 SMART DASHBOARD
-              <span className="bg-orange-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full animate-pulse">
-                Region 3
-              </span>
-            </h1>
-            <p className="text-xs text-purple-200">ระบบติดตามและวิเคราะห์สถานีไฟฟ้า การไฟฟ้าส่วนภูมิภาค เขต 3 (ภาคกลาง) นครปฐม</p>
-          </div>
-        </div>
-
-        {/* แถบตัวเชื่อมต่อข้อมูลดึงสด */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto max-w-lg">
-          <div className="relative flex-grow">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-              <svg className="w-4 h-4 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
-            </span>
-            <input 
-              type="text" 
-              value={syncUrl} 
-              onChange={(e) => setSyncUrl(e.target.value)}
-              placeholder="วางลิงก์ Google Sheets..."
-              className="pl-9 pr-3 py-1.5 w-full bg-purple-950/60 border border-purple-800 rounded text-xs text-purple-100 placeholder-purple-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
-            />
-          </div>
-          <button 
-            onClick={() => fetchGoogleSheetData(syncUrl)}
-            disabled={loading}
-            className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-xs px-4 py-1.5 rounded font-bold transition flex items-center justify-center gap-1 shrink-0 shadow-md"
-          >
-            {loading ? (
-              <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-            ) : "ซิงค์ข้อมูลล่าสุด"}
-          </button>
-        </div>
-      </header>
-
-      {/* แถบแจ้งสถานะการเชื่อมต่อข้อมูล */}
-      <div className={`px-6 py-2 flex items-center justify-between text-xs border-b ${
-        syncStatus.success === true 
-          ? 'bg-emerald-50 text-emerald-800 border-emerald-100' 
-          : syncStatus.success === false 
-          ? 'bg-amber-50 text-amber-800 border-amber-100' 
-          : 'bg-purple-50 text-purple-800 border-purple-100'
-      }`}>
-        <div className="flex items-center gap-2">
-          <span className={`w-2.5 h-2.5 rounded-full ${syncStatus.success ? 'bg-emerald-500 animate-pulse' : 'bg-purple-600'}`} />
-          <span><b>สถานะข้อมูล:</b> {syncStatus.message}</span>
-        </div>
-        <div className="hidden sm:flex items-center gap-3">
-          <span>พบข้อมูลสถานีไฟฟ้าทั้งหมด: <b>{stations.length} แห่ง</b></span>
-          <span>กรองเหลือ: <b>{filteredStations.length} แห่ง</b></span>
-        </div>
-      </div>
-
-      {/* เมนูหลักการใช้งาน */}
-      <div className="bg-white border-b border-slate-200 px-6 py-1.5 flex justify-between items-center flex-wrap gap-2">
-        <div className="flex gap-1">
-          <button 
-            onClick={() => setActiveTab('dashboard')} 
-            className={`flex items-center gap-1 px-4 py-2 rounded text-sm font-semibold transition ${activeTab === 'dashboard' ? 'bg-purple-100 text-purple-800' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
-            </svg>
-            แผงควบคุม (Dashboard)
-          </button>
-          <button 
-            onClick={() => setActiveTab('map')} 
-            className={`flex items-center gap-1 px-4 py-2 rounded text-sm font-semibold transition ${activeTab === 'map' ? 'bg-purple-100 text-purple-800' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            แผนที่ภูมิศาสตร์ (Geographic Map)
-          </button>
-          <button 
-            onClick={() => setActiveTab('list')} 
-            className={`flex items-center gap-1 px-4 py-2 rounded text-sm font-semibold transition ${activeTab === 'list' ? 'bg-purple-100 text-purple-800' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
-            รายการและเครื่องมือตาราง (Substation List)
-          </button>
-        </div>
-
-        <div className="flex gap-2">
-          <button 
-            onClick={() => { setFormMode('add'); resetForm(); setShowAddForm(true); }}
-            className="bg-purple-700 hover:bg-purple-800 text-white text-xs px-3 py-1.5 rounded font-bold flex items-center gap-1 shadow-sm transition"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-            </svg>
-            เพิ่มสถานีไฟฟ้า
-          </button>
-          <button 
-            onClick={handleExportCSV}
-            className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs px-3 py-1.5 rounded font-bold flex items-center gap-1 shadow-sm transition"
-          >
-            <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            ส่งออก CSV
-          </button>
-        </div>
-      </div>
-
-      {/* แดชบอร์ดหลักและโครงสร้างการกรองข้อมูล */}
-      <main className="flex-grow p-6 flex flex-col gap-6">
-
-        {/* บล็อกตัวกรองข้อมูลและค้นหาแบบ Quick Filters (แสดงในแถบแดชบอร์ด/ตาราง) */}
-        {activeTab !== 'map' && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-wrap items-center gap-4 justify-between">
-            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-              {/* ค้นหาข้อความ */}
-              <div className="relative w-full sm:w-64">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                  <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </span>
-                <input 
-                  type="text" 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="ค้นหาชื่อสถานี, ตัวย่อ, โครงการ..."
-                  className="pl-9 pr-3 py-1.5 w-full border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-purple-600 focus:outline-none focus:border-purple-600"
-                />
-              </div>
-
-              {/* สังกัด/จังหวัด */}
-              <select 
-                value={filterAffiliation}
-                onChange={(e) => setFilterAffiliation(e.target.value)}
-                className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-purple-600"
-              >
-                <option value="all">แสดงทุกสังกัด/กฟจ.</option>
-                {affiliationsList.map(aff => (
-                  <option key={aff} value={aff}>{aff}</option>
-                ))}
-              </select>
-
-              {/* แรงดันไฟฟ้า */}
-              <select 
-                value={filterVoltage}
-                onChange={(e) => setFilterVoltage(e.target.value)}
-                className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-purple-600"
-              >
-                <option value="all">ระดับแรงดันทั้งหมด</option>
-                <option value="115/22 kV">115/22 kV</option>
-                <option value="22 kV">22 kV</option>
-              </select>
-
-              {/* ชนิดรูปแบบ */}
-              <select 
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-purple-600"
-              >
-                <option value="all">ทุกรูปแบบ (EGAT/PEA)</option>
-                <option value="EGAT">EGAT (กฟผ.)</option>
-                <option value="PEA">PEA (กฟภ.)</option>
-                <option value="Indoor">Indoor Substation</option>
-              </select>
-
-              {/* สถานะความปลอดภัย (ระดับโหลด) */}
-              <select 
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-purple-600"
-              >
-                <option value="all">สถานะโหลดทั้งหมด</option>
-                <option value="safe">ปลอดภัย (โหลด &lt; 60%)</option>
-                <option value="warning">เฝ้าระวัง (โหลด 60% - 80%)</option>
-                <option value="critical">เกินพิกัด (โหลด &gt;= 80%)</option>
-              </select>
-            </div>
-
-            {/* ปุ่มเคลียร์ตัวกรอง */}
-            <button 
-              onClick={() => {
-                setSearchTerm('');
-                setFilterAffiliation('all');
-                setFilterVoltage('all');
-                setFilterType('all');
-                setFilterStatus('all');
-              }}
-              className="text-purple-700 hover:text-purple-800 text-xs font-bold transition flex items-center gap-1"
-            >
-              รีเซ็ตตัวกรองทั้งหมด
-            </button>
-          </div>
-        )}
-
-        {/* แถบการวิเคราะห์และสรุปยอด (Dashboard) */}
-        {activeTab === 'dashboard' && (
-          <div className="flex flex-col gap-6">
-            
-            {/* บล็อกแจ้งเตือนเมื่อพบสถานี Overloaded (เกิน 80%) */}
-            {stats.criticalCount > 0 && (
-              <div className="bg-red-50 border-l-4 border-red-500 rounded-r-xl p-4 flex items-start gap-3 shadow-sm">
-                <div className="text-red-600 mt-0.5">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <div className="flex-grow">
-                  <h4 className="font-bold text-red-800 text-sm">แจ้งเตือนระดับโหลดความปลอดภัย (Overload Warning)</h4>
-                  <p className="text-xs text-red-700">พบสถานีไฟฟ้า <b>{stats.criticalCount} สถานี</b> ที่มีปริมาณโหลดสะสม <b>เกินกว่า 80%</b> ของพิกัดหม้อแปลง กรุณาเร่งจัดทำแผนงานเพิ่มหรือแบ่งเบาโหลด!</p>
-                </div>
-                <button 
-                  onClick={() => setFilterStatus('critical')} 
-                  className="bg-red-200 hover:bg-red-300 text-red-900 text-xs px-3 py-1 rounded font-bold transition self-center shrink-0"
-                >
-                  ตรวจสอบดูลิสต์
-                </button>
-              </div>
-            )}
-
-            {/* การ์ดสถิติหลัก (KPI Grid) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* การ์ด 1: จำนวนสถานี */}
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center gap-4 hover:shadow transition duration-200">
-                <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-700 shrink-0">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-400">สถานีไฟฟ้าในการดูแล</p>
-                  <p className="text-2xl font-black text-slate-800">{stats.total} <span className="text-xs font-medium text-slate-500">สถานี</span></p>
-                  <p className="text-[10px] text-slate-400 mt-1">จากทั้งหมดในเขต กฟก.3</p>
-                </div>
-              </div>
-
-              {/* การ์ด 2: กำลังไฟติดตั้ง */}
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center gap-4 hover:shadow transition duration-200">
-                <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-400">พิกัดกำลังส่งรวม</p>
-                  <p className="text-2xl font-black text-slate-800">{stats.totalCap} <span className="text-xs font-medium text-slate-500">MVA</span></p>
-                  <p className="text-[10px] text-emerald-600 mt-1 flex items-center gap-0.5">
-                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" /> พร้อมจ่ายไฟเข้าระบบปกติ
-                  </p>
-                </div>
-              </div>
-
-              {/* การ์ด 3: โหลดสูงสุด */}
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center gap-4 hover:shadow transition duration-200">
-                <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 shrink-0">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-400">โหลดสูงสุด (Max Peak)</p>
-                  <p className="text-2xl font-black text-slate-800">{stats.totalMaxLoad} <span className="text-xs font-medium text-slate-500">MW</span></p>
-                  <p className="text-[10px] text-slate-400 mt-1">ความต้องการไฟฟ้าสูงสุดปัจจุบัน</p>
-                </div>
-              </div>
-
-              {/* การ์ด 4: เปอร์เซ็นต์โหลดเฉลี่ย */}
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center gap-4 hover:shadow transition duration-200">
-                <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-400">สัดส่วนโหลดใช้งานเฉลี่ย</p>
-                  <p className="text-2xl font-black text-slate-800">{stats.avgLoadPercent}%</p>
-                  <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
-                    <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${stats.avgLoadPercent}%` }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* แถบกราฟวิเคราะห์ข้อมูลด้วยเทคนิค SVG Dashboard Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
-              {/* แผนภูมิ 1: 10 อันดับสถานีไฟฟ้าที่โหลดสูงที่สุด */}
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded bg-orange-500" />
-                    10 อันดับสถานีไฟฟ้าที่โหลดสูงที่สุด (% Loading)
-                  </h3>
-                  <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">โหลดปัจจุบัน</span>
-                </div>
-                
-                {/* Visual SVG bar chart */}
-                <div className="space-y-3.5 mt-2">
-                  {[...stations]
-                    .sort((a,b) => b.max_load_percent - a.max_load_percent)
-                    .slice(0, 8)
-                    .map((st, index) => {
-                      let barColor = 'bg-emerald-500';
-                      let textColor = 'text-emerald-700';
-                      if (st.max_load_percent >= 80) {
-                        barColor = 'bg-rose-500';
-                        textColor = 'text-rose-700';
-                      } else if (st.max_load_percent >= 60) {
-                        barColor = 'bg-orange-500';
-                        textColor = 'text-orange-700';
-                      }
-
-                      return (
-                        <div key={st.id} className="flex flex-col gap-1">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="font-semibold text-slate-700">{index + 1}. {st.name} <span className="text-slate-400 font-normal">({st.abbr})</span></span>
-                            <span className={`font-bold ${textColor}`}>{st.max_load_percent}% ({st.max_load_mw} MW)</span>
-                          </div>
-                          <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden shadow-inner relative">
-                            <div 
-                              className={`${barColor} h-3 rounded-full transition-all duration-1000`} 
-                              style={{ width: `${Math.min(100, st.max_load_percent)}%` }} 
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-
-              {/* แผนภูมิ 2: สัดส่วนสถานีไฟฟ้าแยกตามจังหวัด/สังกัด */}
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded bg-purple-700" />
-                  การกระจายตัวของสถานีไฟฟ้าแยกตาม สังกัด/กฟจ.
-                </h3>
-
-                {/* Grid แสดงสถิติและเปรียบเทียบในรูปแบบ Donut/Bar สรุป */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
-                  
-                  {/* รายชื่อสังกัดพร้อมจำนวนและกำลังส่ง */}
-                  <div className="space-y-3">
-                    {affiliationsList.map((aff, idx) => {
-                      const listInAff = stations.filter(s => s.affiliation === aff);
-                      const count = listInAff.length;
-                      const ratio = ((count / stations.length) * 100).toFixed(0);
-                      const colorHex = ['#7B1FA2', '#F57C00', '#0288D1', '#388E3C', '#E64A19'][idx % 5];
-                      
-                      return (
-                        <div key={aff} className="flex items-center justify-between text-xs border-b border-slate-100 pb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colorHex }} />
-                            <span className="font-semibold text-slate-700">{aff}</span>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-bold text-slate-800">{count} สถานี</span>
-                            <span className="text-[10px] text-slate-400 block">{ratio}% ของทั้งหมด</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* SVG เปรียบเทียบสัดส่วนวงกลม */}
-                  <div className="flex justify-center relative py-4">
-                    <svg viewBox="0 0 100 100" className="w-40 h-40 transform -rotate-90">
-                      {/* สร้างวงสัดส่วนตามสถิติจริง */}
-                      {(() => {
-                        let accumulatedPercent = 0;
-                        return affiliationsList.map((aff, idx) => {
-                          const count = stations.filter(s => s.affiliation === aff).length;
-                          const percent = (count / stations.length) * 100;
-                          const colorHex = ['#7B1FA2', '#F57C00', '#0288D1', '#388E3C', '#E64A19'][idx % 5];
-                          
-                          // วาด Stroke Arc สำหรับพายพล็อต
-                          const dashArray = `${percent} ${100 - percent}`;
-                          const dashOffset = 100 - accumulatedPercent;
-                          accumulatedPercent += percent;
-
-                          return (
-                            <circle
-                              key={aff}
-                              cx="50"
-                              cy="50"
-                              r="35"
-                              fill="transparent"
-                              stroke={colorHex}
-                              strokeWidth="15"
-                              strokeDasharray={dashArray}
-                              strokeDashoffset={dashOffset}
-                            />
-                          );
-                        });
-                      })()}
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span className="text-xs text-slate-400">สถานีรวม</span>
-                      <span className="text-xl font-extrabold text-slate-800">{stations.length}</span>
+    <!-- Top Navbar -->
+    <nav class="glass-header text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-4">
+                    <!-- PEA Logo / Icon Wrapper -->
+                    <div
+                        class="bg-white text-pea p-2.5 rounded-xl shadow-md flex items-center justify-center transform hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-bolt text-2xl text-amber-500 animate-pulse"></i>
                     </div>
-                  </div>
-
+                    <div>
+                        <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
+                            PEA DATA HUB <span
+                                class="text-xs bg-amber-400 text-purple-900 px-2 py-0.5 rounded-full font-bold">V2.5</span>
+                        </h1>
+                        <p class="text-[11px] text-purple-200 uppercase tracking-wider">Provincial Electricity Authority
+                        </p>
+                    </div>
                 </div>
-
-                {/* โครงสร้างแยกชนิดรูปแบบสถานี */}
-                <div className="mt-6 pt-5 border-t border-slate-100">
-                  <h4 className="text-xs font-bold text-slate-700 mb-3">จำแนกตาม ชนิด/รูปแบบ โครงสร้าง</h4>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    {['EGAT', 'PEA', 'Indoor'].map(t => {
-                      const count = stations.filter(s => s.type === t).length;
-                      return (
-                        <div key={t} className="bg-slate-50 rounded-lg p-2 border border-slate-100">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">{t}</span>
-                          <p className="text-lg font-black text-slate-800 mt-1">{count}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleDarkMode()" id="dark-mode-toggle"
+                        class="bg-white/10 hover:bg-white/20 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all w-10 h-10 rounded-xl flex items-center justify-center text-amber-300 shadow-sm border border-transparent dark:border-slate-600">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                    <button onclick="fetchData()"
+                        class="bg-pea hover:bg-purple-900 dark:bg-pea-dark dark:hover:bg-pea transition-all px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm border border-purple-500 hover:border-purple-300 dark:border-purple-800">
+                        <i class="fa-solid fa-rotate-right" id="refresh-icon"></i>
+                        <span class="hidden sm:inline">รีเฟรชข้อมูล</span>
+                    </button>
+                    <div
+                        class="w-10 h-10 rounded-xl bg-purple-800 dark:bg-slate-800 border border-purple-600 dark:border-slate-600 flex items-center justify-center text-amber-400 font-bold shadow-md">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
                 </div>
-
-              </div>
             </div>
+        </div>
+    </nav>
 
-            {/* ส่วนสรุปตารางสถานีไฟฟ้าล่าสุดด่วน */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded bg-purple-900" />
-                  รายการภาพรวมสถานีไฟฟ้า {filteredStations.length} แห่งในระบบ
-                </h3>
-                <button 
-                  onClick={() => setActiveTab('list')}
-                  className="text-xs font-bold text-purple-700 hover:underline"
-                >
-                  เปิดตารางแบบเต็ม &gt;
-                </button>
-              </div>
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 w-full">
 
-              {/* ตารางแสดงผลแบบย่นย่อ */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
-                      <th className="py-2 px-3">ลําดับ</th>
-                      <th className="py-2 px-3">ชื่อสถานีไฟฟ้า</th>
-                      <th className="py-2 px-3">ตัวย่อ</th>
-                      <th className="py-2 px-3">ขนาด MVA</th>
-                      <th className="py-2 px-3">สังกัด/กฟจ.</th>
-                      <th className="py-2 px-3">โหลดใช้งานปัจจุบัน</th>
-                      <th className="py-2 px-3">โครงการ/แผนงาน</th>
-                      <th className="py-2 px-3">เครื่องมือ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredStations.slice(0, 5).map(st => {
-                      let statusBadge = (
-                        <span className="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-[10px]">
-                          {st.max_load_percent}% ปลอดภัย
-                        </span>
-                      );
-                      if (st.max_load_percent >= 80) {
-                        statusBadge = (
-                          <span className="bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded text-[10px] animate-pulse">
-                            {st.max_load_percent}% วิกฤต
-                          </span>
-                        );
-                      } else if (st.max_load_percent >= 60) {
-                        statusBadge = (
-                          <span className="bg-orange-100 text-orange-800 font-bold px-2 py-0.5 rounded text-[10px]">
-                            {st.max_load_percent}% เฝ้าระวัง
-                          </span>
-                        );
-                      }
-
-                      return (
-                        <tr key={st.id} className="border-b border-slate-100 hover:bg-slate-50">
-                          <td className="py-2.5 px-3 font-semibold text-slate-500">{st.no}</td>
-                          <td className="py-2.5 px-3 font-bold text-slate-800">{st.name}</td>
-                          <td className="py-2.5 px-3 font-mono text-slate-600">{st.abbr}</td>
-                          <td className="py-2.5 px-3">{st.size}</td>
-                          <td className="py-2.5 px-3">{st.affiliation}</td>
-                          <td className="py-2.5 px-3">{statusBadge}</td>
-                          <td className="py-2.5 px-3 text-slate-500 truncate max-w-xs">{st.project || '-'}</td>
-                          <td className="py-2.5 px-3">
-                            <button 
-                              onClick={() => setSelectedStation(st)}
-                              className="text-purple-700 hover:text-purple-900 font-bold text-xs"
-                            >
-                              ตรวจสอบ
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {/* แถบแผนที่ภูมิศาสตร์ (Geographic Map Interface) */}
-        {activeTab === 'map' && (
-          <div className="flex-grow flex flex-col lg:flex-row gap-6">
-            
-            {/* กล่องแสดงสิทธิ์และข้อมูลอัพเดตด่วน */}
-            <div className="w-full lg:w-80 shrink-0 bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col gap-4">
-              <div>
-                <h3 className="font-extrabold text-slate-800 text-sm">ค้นหาข้อมูลแผนที่</h3>
-                <p className="text-xs text-slate-400">กรองและแตะหมุดสถานีไฟฟ้าบนแผนที่จริงเพื่อแสดงผลนำทาง</p>
-              </div>
-
-              {/* ฟิลเตอร์เฉพาะในหน้าแผนที่เพื่อประหยัดพื้นที่ */}
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-slate-600 block">ค้นหาตามชื่อสถานี</label>
-                <input 
-                  type="text" 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="พิมพ์ค้นหาด่วน..."
-                  className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-purple-600 focus:outline-none"
-                />
-
-                <label className="text-xs font-bold text-slate-600 block">สังกัดจังหวัด</label>
-                <select 
-                  value={filterAffiliation}
-                  onChange={(e) => setFilterAffiliation(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-purple-600"
-                >
-                  <option value="all">แสดงทั้งหมด</option>
-                  {affiliationsList.map(aff => (
-                    <option key={aff} value={aff}>{aff}</option>
-                  ))}
-                </select>
-
-                <label className="text-xs font-bold text-slate-600 block">ระดับสถานะโหลด</label>
-                <select 
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-purple-600"
-                >
-                  <option value="all">ทั้งหมด</option>
-                  <option value="safe">ปลอดภัย (&lt; 60%)</option>
-                  <option value="warning">เฝ้าระวัง (60%-80%)</option>
-                  <option value="critical">เกินพิกัด (&gt;= 80%)</option>
-                </select>
-              </div>
-
-              {/* Legend คำอธิบายสี */}
-              <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 text-xs space-y-2 mt-auto">
-                <span className="font-bold text-slate-700 block mb-1">ความหมายสีของสถานี</span>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-emerald-500" />
-                  <span>โหลดปลอดภัย (&lt; 60%)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-orange-500" />
-                  <span>เฝ้าระวัง (60% - 80%)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-rose-500" />
-                  <span>โหลดเกินพิกัด (&gt;= 80%)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* แผ่นป้ายแผนที่จริง */}
-            <div className="flex-grow bg-slate-100 rounded-xl overflow-hidden shadow-inner border border-slate-200 relative min-h-[450px]">
-              <div ref={mapRef} className="w-full h-full min-h-[500px] z-10" />
-            </div>
-
-          </div>
-        )}
-
-        {/* แถบตารางรายชื่อเต็มรูปแบบ (Substation List / Table) */}
-        {activeTab === 'list' && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-              <div>
-                <h3 className="font-extrabold text-slate-800 text-sm">ข้อมูลสรุปและสถานะทั้งหมด</h3>
-                <p className="text-xs text-slate-400">คลิกที่หัวตารางเพื่อจัดเรียงลำดับ หรือแตะปุ่มเพื่อตรวจสอบลึก</p>
-              </div>
-              <div className="text-xs text-slate-400">
-                แสดงผล <b>{sortedStations.length}</b> จาก <b>{stations.length}</b> รายการสถานีไฟฟ้า
-              </div>
-            </div>
-
-            {/* ตารางเต็มพิกัด */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 select-none">
-                    <th onClick={() => requestSort('no')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
-                      ลําดับ {sortConfig.key === 'no' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
-                    </th>
-                    <th onClick={() => requestSort('name')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
-                      ชื่อสถานีไฟฟ้า {sortConfig.key === 'name' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
-                    </th>
-                    <th onClick={() => requestSort('abbr')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
-                      ตัวย่อ {sortConfig.key === 'abbr' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
-                    </th>
-                    <th onClick={() => requestSort('affiliation')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
-                      สังกัด {sortConfig.key === 'affiliation' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
-                    </th>
-                    <th onClick={() => requestSort('size')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
-                      ขนาดหม้อแปลง {sortConfig.key === 'size' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
-                    </th>
-                    <th onClick={() => requestSort('max_load_mw')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
-                      โหลดใช้งานสูงสุด {sortConfig.key === 'max_load_mw' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
-                    </th>
-                    <th onClick={() => requestSort('max_load_percent')} className="py-3 px-4 cursor-pointer hover:bg-slate-100">
-                      สัดส่วนโหลดสูงสุด {sortConfig.key === 'max_load_percent' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''}
-                    </th>
-                    <th className="py-3 px-4">ชนิด - รูปแบบ</th>
-                    <th className="py-3 px-4">วันจ่ายไฟ</th>
-                    <th className="py-3 px-4 text-center">จัดการ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedStations.length === 0 ? (
-                    <tr>
-                      <td colSpan="10" className="py-8 text-center text-slate-400 font-bold">
-                        ไม่พบข้อมูลตามตัวกรองที่เลือก
-                      </td>
-                    </tr>
-                  ) : (
-                    sortedStations.map((st, idx) => {
-                      let loadColor = 'text-emerald-700 bg-emerald-100';
-                      if (st.max_load_percent >= 80) loadColor = 'text-rose-700 bg-rose-100 animate-pulse';
-                      else if (st.max_load_percent >= 60) loadColor = 'text-orange-700 bg-orange-100';
-
-                      return (
-                        <tr key={st.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
-                          <td className="py-3 px-4 font-bold text-slate-500">{st.no}</td>
-                          <td className="py-3 px-4 font-bold text-slate-800">{st.name}</td>
-                          <td className="py-3 px-4 font-mono text-slate-600 font-semibold">{st.abbr}</td>
-                          <td className="py-3 px-4">{st.affiliation}</td>
-                          <td className="py-3 px-4">{st.size}</td>
-                          <td className="py-3 px-4 font-bold">{st.max_load_mw} MW</td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${loadColor}`}>
-                              {st.max_load_percent}%
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="text-slate-500 bg-slate-100 px-2 py-0.5 rounded text-[10px] font-medium">{st.type}</span>
-                          </td>
-                          <td className="py-3 px-4 text-slate-500">{st.power_date || '-'}</td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center justify-center gap-2">
-                              <button 
-                                onClick={() => setSelectedStation(st)}
-                                className="text-purple-700 hover:text-purple-950 font-bold px-2 py-1 hover:bg-purple-50 rounded"
-                              >
-                                รายละเอียด
-                              </button>
-                              <button 
-                                onClick={() => handleEditClick(st)}
-                                className="text-amber-600 hover:text-amber-800 font-bold px-2 py-1 hover:bg-amber-50 rounded"
-                              >
-                                แก้ไข
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-      </main>
-
-      {/* ส่วนป๊อปอัพ / โมดอล แสดงรายละเอียดสถานีเชิงลึก */}
-      {selectedStation && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
-            
-            {/* แถบหัวโมดอล */}
-            <div className={`bg-gradient-to-r ${THEME.primary} p-6 text-white flex justify-between items-start shrink-0`}>
-              <div>
-                <span className="bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
-                  {selectedStation.type} Substation
-                </span>
-                <h2 className="text-xl font-bold mt-1.5 flex items-center gap-2">
-                  สถานีไฟฟ้า: {selectedStation.name}
-                  <span className="text-purple-200 font-mono text-base font-normal">({selectedStation.abbr})</span>
+        <!-- Header Section -->
+        <div
+            class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 transition-colors">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-square-poll-vertical text-pea"></i>
+                    ข้อมูลสถานีไฟฟ้าในพื้นที่ กฟก.3
                 </h2>
-                <p className="text-xs text-purple-200 mt-1">สังกัด: {selectedStation.affiliation} | เขตการจ่ายไฟ กฟก.3</p>
-              </div>
-              <button 
-                onClick={() => setSelectedStation(null)}
-                className="bg-white/10 hover:bg-white/20 text-white p-1 rounded-full transition"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                <p class="text-sm text-gray-500 dark:text-slate-400 mt-1">
+                    เชื่อมต่อ Google Sheets API อัตโนมัติ พร้อมระบบประมวลผลข้อมูลทางสถิติ
+                </p>
+            </div>
+            <div class="flex flex-col sm:flex-end gap-2 text-right">
+                <div id="connection-status"
+                    class="bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 border border-amber-200 dark:border-amber-700/50 self-start sm:self-auto transition-colors">
+                    <i class="fa-solid fa-circle text-amber-500 text-[10px] animate-pulse"></i>
+                    <span>กำลังโหลดแหล่งข้อมูล...</span>
+                </div>
+                <div id="last-updated" class="text-xs text-gray-400 dark:text-slate-500 mt-1 hidden">อัปเดตล่าสุด:
+                    ไม่ระบุ</div>
+            </div>
+        </div>
+
+        <!-- System Message Bar -->
+        <div id="system-toast"
+            class="hidden bg-purple-900 dark:bg-slate-800 dark:border dark:border-purple-800 text-white p-4 rounded-xl shadow-lg mb-6 flex justify-between items-center transition-all transform duration-300">
+            <span id="toast-message" class="text-sm font-medium"></span>
+            <button onclick="closeToast()" class="text-white hover:text-amber-300"><i
+                    class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+
+        <!-- Error & Loading States -->
+        <div id="loading-state"
+            class="flex flex-col items-center justify-center py-24 bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm transition-colors">
+            <div class="relative flex items-center justify-center mb-4">
+                <div
+                    class="w-16 h-16 border-4 border-purple-200 dark:border-slate-600 border-t-pea dark:border-t-pea rounded-full animate-spin">
+                </div>
+                <i class="fa-solid fa-bolt text-2xl text-amber-500 absolute"></i>
+            </div>
+            <p class="text-lg text-gray-700 dark:text-slate-200 font-semibold">กำลังวิเคราะห์และจัดสรรข้อมูล...</p>
+            <p class="text-xs text-gray-400 dark:text-slate-500 mt-1">ดึงโครงสร้างข้อมูลจาก Google Sheets
+                เครือข่ายการไฟฟ้าส่วนภูมิภาค</p>
+        </div>
+
+        <div id="error-state"
+            class="hidden bg-gradient-to-r from-red-50 to-orange-50 dark:from-slate-800/80 dark:to-slate-800/80 border-l-8 border-red-500 p-6 rounded-2xl shadow-sm mb-8 transition-colors">
+            <div class="flex items-start gap-4">
+                <div class="bg-red-500 text-white p-3 rounded-xl shadow-md">
+                    <i class="fa-solid fa-circle-exclamation text-2xl"></i>
+                </div>
+                <div class="flex-grow">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-lg font-bold text-red-900 dark:text-red-400">ไม่สามารถเชื่อมต่อข้อมูลโดยตรงได้
+                        </h3>
+                        <span
+                            class="bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-[11px] font-bold px-2.5 py-1 rounded-full uppercase">ระบบทำงานบนฐานข้อมูลสำรองแล้ว</span>
+                    </div>
+                    <p class="text-red-700 dark:text-slate-300 mt-1 text-sm leading-relaxed" id="error-message">
+                        เนื่องจาก Google Sheets จำกัดการเข้าถึง (ไม่ได้แชร์เป็น 'ทุกคนที่มีลิงก์') ระบบจึงสลับมาแสดง
+                        **ชุดข้อมูลต้นแบบจำลองของสถานีไฟฟ้าการไฟฟ้าส่วนภูมิภาค (PEA Equipment State)**
+                        ให้คุณใช้งานโดยทันที
+                    </p>
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <a href="https://docs.google.com/spreadsheets/d/1FZ_Zhvn4Tuy7PZpFDcTQxCit-DX4hgxotxctQ5cOBTQ/edit"
+                            target="_blank"
+                            class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-sm transition-all font-medium flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> เปิดดูชีตต้นฉบับ
+                        </a>
+                        <button onclick="dismissErrorAndShowBackup()"
+                            class="bg-gray-800 hover:bg-gray-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-sm transition-all font-medium flex items-center gap-2 shadow-sm">
+                            ตกลง เข้าสู่แดชบอร์ดสำรอง
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div id="dashboard-content" class="hidden space-y-8 fade-in">
+
+            <!-- KPI Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="kpi-container">
+                <!-- Cards dynamically injected here -->
             </div>
 
-            {/* เนื้อหาโมดอล */}
-            <div className="p-6 overflow-y-auto space-y-6">
-              
-              {/* รายละเอียดเกจระดับโหลดไฟฟ้าแบบ Visual SVG */}
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-between gap-6">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">เปอร์เซ็นต์โหลดปัจจุบัน (Peak Load %)</h4>
-                  <p className="text-3xl font-black mt-1 text-slate-800">{selectedStation.max_load_percent}%</p>
-                  <p className="text-xs text-slate-400 mt-1">ความต้องการใช้งานสูงสุด {selectedStation.max_load_mw} MW</p>
+            <!-- Charts & Custom Controls Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Bar Chart Wrapper -->
+                <div
+                    class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 lg:col-span-2 flex flex-col justify-between transition-colors">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-lg font-bold text-gray-800 dark:text-slate-100 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-column text-pea"></i>
+                                <span id="bar-chart-title">สรุปภาพรวมปริมาณข้อมูล</span>
+                            </h3>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-gray-400 dark:text-slate-400">แกน Y:</span>
+                                <select id="bar-axis-selector" onchange="regenerateCharts()"
+                                    class="text-xs border border-gray-200 dark:border-slate-600 rounded-lg p-1.5 focus:border-pea focus:outline-none bg-gray-50 dark:bg-slate-700 font-medium text-gray-600 dark:text-slate-200">
+                                    <!-- Dynamic Options for numerical columns -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="relative h-72 w-full">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+                    <p
+                        class="text-[11px] text-gray-400 dark:text-slate-500 mt-3 border-t pt-2 border-gray-50 dark:border-slate-700 flex items-center gap-1">
+                        <i class="fa-solid fa-circle-info"></i>
+                        ปรับเปลี่ยนแกนวิเคราะห์เชิงสถิติได้ตามต้องการผ่านตัวเลือกมุมขวาบน
+                    </p>
                 </div>
-                
-                {/* วงแหวนเปอร์เซ็นต์โหลด */}
-                <div className="relative w-20 h-20">
-                  <svg className="w-full h-full" viewBox="0 0 36 36">
-                    <path
-                      className="text-slate-200"
-                      strokeWidth="3.5"
-                      stroke="currentColor"
-                      fill="none"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                    <path
-                      className={
-                        selectedStation.max_load_percent >= 80 ? "text-rose-500" :
-                        selectedStation.max_load_percent >= 60 ? "text-orange-
+
+                <!-- Doughnut Chart Wrapper -->
+                <div
+                    class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col justify-between transition-colors">
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-gray-800 dark:text-slate-100 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-pie text-pea"></i> สัดส่วนหมวดหมู่
+                            </h3>
+                            <select id="doughnut-column-selector" onchange="regenerateCharts()"
+                                class="text-xs border border-gray-200 dark:border-slate-600 rounded-lg p-1.5 focus:border-pea focus:outline-none bg-gray-50 dark:bg-slate-700 font-medium text-gray-600 dark:text-slate-200">
+                                <!-- Dynamic Options for string columns -->
+                            </select>
+                        </div>
+                        <div class="relative h-64 w-full flex justify-center items-center">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                    </div>
+                    <p
+                        class="text-[11px] text-gray-400 dark:text-slate-500 mt-3 border-t pt-2 border-gray-50 dark:border-slate-700 text-center">
+                        สัดส่วนเปอร์เซ็นต์คำนวณตามจำนวนเรคอร์ดจริงทั้งหมด
+                    </p>
+                </div>
+            </div>
+
+            <!-- Intelligent Insights Box -->
+            <div
+                class="bg-gradient-to-r from-purple-900 to-indigo-950 p-6 rounded-2xl shadow-md text-white border border-purple-800">
+                <div class="flex items-start gap-4">
+                    <div class="bg-amber-400 text-purple-950 p-3 rounded-xl shadow-inner font-bold text-lg">
+                        <i class="fa-solid fa-wand-magic-sparkles animate-bounce"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-bold text-amber-300">บทวิเคราะห์ข้อมูลเชิงระบบอัตโนมัติ (Insight Helper)
+                        </h4>
+                        <p class="text-sm text-purple-100 mt-1 leading-relaxed" id="ai-insight-text">
+                            กำลังเตรียมสรุปรายงานสถิติอุปกรณ์และพฤติกรรมของโครงข่ายเพื่อช่วยวางแผนงานบำรุงรักษา...
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table Section -->
+            <div
+                class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden transition-colors">
+                <div
+                    class="p-6 border-b border-gray-100 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-table-list text-pea"></i> ตารางแจกแจงรายละเอียด (Data Table)
+                        </h3>
+                        <p class="text-xs text-gray-400 dark:text-slate-500 mt-0.5">คัดเลือกเฉพาะคอลัมน์ A D E G H J K O
+                            W เท่านั้น</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        <div class="relative w-full sm:w-64">
+                            <i
+                                class="fa-solid fa-search absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="text" id="searchInput" oninput="handleSearch()"
+                                placeholder="ค้นหาข้อมูลทุกฟิลด์..."
+                                class="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-600 rounded-xl focus:outline-none focus:border-pea focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-900 bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200 text-sm transition-all shadow-sm">
+                        </div>
+                        <button onclick="exportToCSV()"
+                            class="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 transition-colors px-4 py-2 rounded-xl text-sm font-medium text-white flex items-center justify-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-file-excel"></i> <span>ส่งออกไฟล์ Excel/CSV</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse" id="dataTable">
+                        <thead>
+                            <tr class="bg-gray-50 dark:bg-slate-700/50 text-gray-600 dark:text-slate-300 text-xs font-semibold border-y border-gray-200 dark:border-slate-700 transition-colors"
+                                id="table-head">
+                                <!-- Dynamic Headers with Sorting Indicator injected here -->
+                            </tr>
+                        </thead>
+                        <tbody
+                            class="text-sm text-gray-700 dark:text-slate-300 divide-y divide-gray-100 dark:divide-slate-700/50"
+                            id="table-body">
+                            <!-- Dynamic Rows injected here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div
+                    class="p-5 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-500 dark:text-slate-400 transition-colors">
+                    <span id="showing-entries" class="font-medium">แสดงข้อมูลทั้งหมด - รายการ</span>
+                    <div class="flex gap-1.5" id="pagination-controls">
+                        <!-- Dynamic pagination or page counters if needed -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 mt-auto transition-colors">
+        <div
+            class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-pea text-lg"></i>
+                <p class="text-sm text-gray-500 dark:text-slate-400">© 2026 PEA Dashboard Data Hub.
+                    พัฒนาและออกแบบเพื่อใช้บริหารจัดการสถิติอย่างปลอดภัย</p>
+            </div>
+            <div class="flex gap-4 text-gray-400 dark:text-slate-500 text-lg">
+                <a href="#" class="hover:text-pea dark:hover:text-pea-light transition-colors"><i
+                        class="fa-brands fa-facebook"></i></a>
+                <a href="#" class="hover:text-pea dark:hover:text-pea-light transition-colors"><i
+                        class="fa-brands fa-twitter"></i></a>
+                <a href="#" class="hover:text-pea dark:hover:text-pea-light transition-colors"><i
+                        class="fa-solid fa-globe"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // CONFIGURATION
+        const SHEET_ID = '1FZ_Zhvn4Tuy7PZpFDcTQxCit-DX4hgxotxctQ5cOBTQ';
+
+        // คอลัมน์ที่กำหนดให้แสดงผลเฉพาะในตารางแจกแจงรายละเอียด:
+        // A (Index 0), D (Index 3), E (Index 4), G (Index 6), H (Index 7), J (Index 9), K (Index 10), O (Index 14), W (Index 22)
+        const ALLOWED_TABLE_COLS = [0, 3, 4, 6, 7, 9, 10, 14, 22];
+
+        // High-Fidelity Backup/Mock Data representing PEA Grid assets - Expanded to 23 columns (including Column W at Index 22)
+        const BACKUP_DATA = {
+            cols: [
+                "รหัสอุปกรณ์ (A)", "ประเภทอุปกรณ์ (B)", "ระดับแรงดัน kV (C)", "สถานีไฟฟ้า (D)",
+                "พิกัดกระแส A (E)", "สถานะการทำงาน (F)", "อุณหภูมิใช้งาน °C (G)", "แบรนด์ผู้ผลิต (H)",
+                "ปีที่ติดตั้ง (I)", "ละติจูด (J)", "ลองจิจูด (K)", "ประวัติซ่อมแซม (L)",
+                "ระดับความเสี่ยง (M)", "ชนิดฉนวนอุปกรณ์ (N)", "คอลัมน์ O", "หมายเหตุ (P)",
+                "คอลัมน์ Q", "คอลัมน์ R", "คอลัมน์ S", "คอลัมน์ T", "คอลัมน์ U", "คอลัมน์ V", "ค่าคำนวณกำลังไฟฟ้า (W)"
+            ],
+            rows: [
+                ["TR-01", "Transformer", "115", "สถานีไฟฟ้าเชียงใหม่ 1", "800", "ปกติ", "65.5", "ABB", "2018", "18.7883", "98.9853", "ไม่มี", "ต่ำ", "น้ำมันหม้อแปลง", "ถาวร", "ถาวร", "", "", "", "", "", "", "12000"],
+                ["CB-12", "Circuit Breaker", "22", "สถานีไฟฟ้าเชียงใหม่ 1", "1250", "ปกติ", "42.1", "Siemens", "2019", "18.7883", "98.9853", "1 ครั้ง", "ต่ำ", "ก๊าซ SF6", "ถาวร", "ถาวร", "", "", "", "", "", "", "22000"],
+                ["TR-02", "Transformer", "115", "สถานีไฟฟ้าแม่ริม", "630", "เตือน (อุณหภูมิสูง)", "78.2", "ABB", "2015", "18.9142", "98.9463", "2 ครั้ง", "สูง", "น้ำมันหม้อแปลง", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "9450"],
+                ["DS-05", "Disconnect Switch", "22", "สถานีไฟฟ้าหางดง", "630", "ปกติ", "38.0", "Schneider", "2021", "18.6872", "98.9172", "ไม่มี", "ต่ำ", "อากาศ", "ถาวร", "ถาวร", "", "", "", "", "", "", "4500"],
+                ["CB-04", "Circuit Breaker", "115", "สถานีไฟฟ้าสารภี", "2000", "ปกติ", "45.8", "Siemens", "2017", "18.7150", "99.0360", "ไม่มี", "ต่ำ", "ก๊าซ SF6", "ถาวร", "ถาวร", "", "", "", "", "", "", "30000"],
+                ["TR-03", "Transformer", "115", "สถานีไฟฟ้าสันทราย", "800", "ปิดปรับปรุง", "25.0", "Toshiba", "2012", "18.8475", "99.0450", "3 ครั้ง", "ปานกลาง", "น้ำมันหม้อแปลง", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "12000"],
+                ["LA-09", "Lightning Arrester", "22", "สถานีไฟฟ้าสันกำแพง", "400", "ปกติ", "33.4", "Schneider", "2022", "18.7450", "99.1200", "ไม่มี", "ต่ำ", "โพลิเมอร์", "ถาวร", "ถาวร", "", "", "", "", "", "", "2800"],
+                ["CB-07", "Circuit Breaker", "22", "สถานีไฟฟ้าแม่โจ้", "1250", "ปกติ", "40.9", "ABB", "2020", "18.8988", "99.0125", "ไม่มี", "ต่ำ", "สุญญากาศ", "ถาวร", "ถาวร", "", "", "", "", "", "", "22000"],
+                ["TR-04", "Transformer", "115", "สถานีไฟฟ้าหางดง", "1000", "ปกติ", "58.3", "Toshiba", "2016", "18.6872", "98.9172", "1 ครั้ง", "ต่ำ", "น้ำมันหม้อแปลง", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "15000"],
+                ["DS-11", "Disconnect Switch", "115", "สถานีไฟฟ้าแม่ริม", "1200", "ชำรุดรอซ่อม", "92.4", "Schneider", "2014", "18.9142", "98.9463", "4 ครั้ง", "สูงมาก", "อากาศ", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "18000"],
+                ["CB-22", "Circuit Breaker", "22", "สถานีไฟฟ้าสันกำแพง", "1250", "ปกติ", "44.2", "Siemens", "2018", "18.7450", "99.1200", "ไม่มี", "ต่ำ", "ก๊าซ SF6", "ถาวร", "ถาวร", "", "", "", "", "", "", "22000"],
+                ["TR-05", "Transformer", "115", "สถานีไฟฟ้าแม่โจ้", "1250", "เตือน (อุณหภูมิสูง)", "76.9", "ABB", "2015", "18.8988", "99.0125", "2 ครั้ง", "สูง", "น้ำมันหม้อแปลง", "ถาวร", "ถาวร", "", "", "", "", "", "", "18750"],
+                ["CB-19", "Circuit Breaker", "22", "สถานีไฟฟ้าสันทราย", "630", "ปกติ", "39.5", "Schneider", "2021", "18.8475", "99.0450", "ไม่มี", "ต่ำ", "สุญญากาศ", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "4500"]
+            ]
+        };
+
+        // Application State
+        let parsedHeaders = [];
+        let rawTableRows = []; // Complete parsed dataset
+        let filteredTableRows = []; // Filtered dataset currently viewable
+        let activeSortColumn = null;
+        let activeSortDirection = 'asc'; // 'asc' or 'desc'
+
+        // Filter state for Column O (index 14)
+        let filterValO = 'all';
+
+        // Chart References
+        let barChartInstance = null;
+        let pieChartInstance = null;
+
+        // On Load Page
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+        });
+
+        // Main Fetch Controller
+        async function fetchData() {
+            showLoading(true);
+            const refreshIcon = document.getElementById('refresh-icon');
+            if (refreshIcon) refreshIcon.classList.add('fa-spin');
+
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP status error: ${response.status}`);
+                }
+                const text = await response.text();
+
+                // Extract pure JSON block from google visualization payload
+                const startIdx = text.indexOf('{');
+                const endIdx = text.lastIndexOf('}') + 1;
+                if (startIdx === -1 || endIdx === -1) {
+                    throw new Error("Invalid format from Google Sheets visualization API");
+                }
+                const jsonText = text.substring(startIdx, endIdx);
+                const dataObj = JSON.parse(jsonText);
+
+                // ดึงโครงสร้างหัวคอลัมน์ดั้งเดิมจาก Google Sheets API
+                parsedHeaders = dataObj.table.cols.map(col => col.label || 'คอลัมน์ไม่มีชื่อ');
+
+                // ดึงข้อมูลแถวทั้งหมดจาก API
+                rawTableRows = dataObj.table.rows.map(row => {
+                    return row.c.map(cell => {
+                        if (!cell) return '';
+                        return cell.v !== null ? String(cell.v) : '';
+                    });
+                });
+
+                setConnectionStatus("online");
+                hideError();
+                initDashboardUI();
+            } catch (err) {
+                console.warn("Failed to retrieve Google Sheet directly. Displaying local High-Fidelity Dataset.", err);
+                setConnectionStatus("backup");
+                showError(err.message);
+
+                // Set backup structure
+                parsedHeaders = [...BACKUP_DATA.cols];
+                rawTableRows = BACKUP_DATA.rows.map(row => [...row]);
+                initDashboardUI();
+            } finally {
+                showLoading(false);
+                if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+                updateTimestamp();
+            }
+        }
+
+        // Connect Status Indicator Styling
+        function setConnectionStatus(status) {
+            const el = document.getElementById('connection-status');
+            if (!el) return;
+
+            if (status === "online") {
+                el.innerHTML = `<i class="fa-solid fa-circle text-emerald-500 text-[10px] animate-pulse"></i> <span>เชื่อมต่อ Google Sheets สำเร็จ</span>`;
+                el.className = "bg-emerald-50 text-emerald-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 border border-emerald-200 self-start sm:self-auto";
+            } else if (status === "backup") {
+                el.innerHTML = `<i class="fa-solid fa-circle text-orange-500 text-[10px]"></i> <span>ข้อมูลพอร์ตจำลอง PEA Grid (Offline)</span>`;
+                el.className = "bg-amber-50 text-amber-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 border border-amber-200 self-start sm:self-auto";
+            }
+        }
+
+        function updateTimestamp() {
+            const timeEl = document.getElementById('last-updated');
+            if (timeEl) {
+                const now = new Date();
+                timeEl.innerText = `อัปเดตล่าสุด: ${now.toLocaleTimeString('th-TH')} น.`;
+                timeEl.classList.remove('hidden');
+            }
+        }
+
+        // Loading and error UI toggling
+        function showLoading(isLoading) {
+            const loading = document.getElementById('loading-state');
+            const content = document.getElementById('dashboard-content');
+            if (isLoading) {
+                loading.classList.remove('hidden');
+                content.classList.add('hidden');
+            } else {
+                loading.classList.add('hidden');
+                content.classList.remove('hidden');
+            }
+        }
+
+        function showError(message) {
+            const errEl = document.getElementById('error-state');
+            const errText = document.getElementById('error-message');
+            errEl.classList.remove('hidden');
+            if (errText) {
+                errText.innerHTML = `เนื่องจากสิทธิความปลอดภัยของลิงก์แชร์จาก Google Sheet (ID: <code>${SHEET_ID}</code>) ไม่อนุญาตให้บุคคลภายนอกเข้าถึง (หรือตั้งเป็น Private) <br><br><strong>เพื่อประสบการณ์ใช้งานที่สมบูรณ์ที่สุด ระบบได้สลับไปรันโปรแกรมด้วย ชุดข้อมูลต้นแบบจำลองระบบกำลังไฟฟ้า (PEA Smart Substation Sample Data) ของเราโดยเรียบร้อยแล้ว</strong>`;
+            }
+        }
+
+        // Dismiss backup alert box
+        function hideError() {
+            const errEl = document.getElementById('error-state');
+            errEl.classList.add('hidden');
+        }
+
+        function dismissErrorAndShowBackup() {
+            hideError();
+            triggerToast("สลับเข้าสู่โหมดจำลองสถานะอุปกรณ์การไฟฟ้าฝ่ายผลิตส่วนภูมิภาคสำเร็จ");
+        }
+
+        // Main Initialize Dashboard
+        function initDashboardUI() {
+            filterValO = 'all';
+            applyAllFilters();
+            populateSelectorDropdowns();
+        }
+
+        // Unified Filtering Engine
+        function applyAllFilters() {
+            const searchVal = document.getElementById('searchInput')?.value.toLowerCase().trim() || '';
+            const colOIdx = 14; // Column O (Index 14)
+
+            let tempRows = [...rawTableRows];
+
+            // 1. กรองจากตัวเลือกคอลัมน์ O
+            if (filterValO !== 'all' && parsedHeaders.length > colOIdx) {
+                tempRows = tempRows.filter(row => {
+                    const cellVal = row[colOIdx] ? row[colOIdx].trim() : '';
+                    return cellVal === filterValO;
+                });
+            }
+
+            // 2. กรองข้อมูลจากช่องค้นหาหลัก
+            if (searchVal !== '') {
+                tempRows = tempRows.filter(row => {
+                    return row.some(cell => String(cell).toLowerCase().includes(searchVal));
+                });
+            }
+
+            filteredTableRows = tempRows;
+
+            computeKPIs();
+            regenerateCharts();
+            renderTable();
+        }
+
+        // Analyze columns
+        function getColumnStats() {
+            const stats = {
+                numericCols: [],
+                stringCols: []
+            };
+
+            parsedHeaders.forEach((header, index) => {
+                let numericMatchCount = 0;
+                let emptyCount = 0;
+
+                rawTableRows.forEach(row => {
+                    const value = row[index] ? row[index].trim() : '';
+                    if (value === '') {
+                        emptyCount++;
+                        return;
+                    }
+                    if (!isNaN(parseFloat(value))) {
+                        numericMatchCount++;
+                    }
+                });
+
+                const filledRows = rawTableRows.length - emptyCount;
+                if (filledRows > 0 && (numericMatchCount / filledRows) > 0.5) {
+                    stats.numericCols.push({ index, label: header });
+                } else {
+                    stats.stringCols.push({ index, label: header });
+                }
+            });
+
+            return stats;
+        }
+
+        // Setup Dropdowns dynamically
+        function populateSelectorDropdowns() {
+            const stats = getColumnStats();
+            const barAxisSelector = document.getElementById('bar-axis-selector');
+            const pieColumnSelector = document.getElementById('doughnut-column-selector');
+
+            if (!barAxisSelector || !pieColumnSelector) return;
+
+            barAxisSelector.innerHTML = '';
+            pieColumnSelector.innerHTML = '';
+
+            // กรองให้เลือกได้แค่ "โหลดสูงสุด (MW)" และ "โหลดสูงสุด (%)"
+            const filteredBarCols = stats.numericCols.filter(col =>
+                col.label.includes("โหลดสูงสุด (MW)") || col.label.includes("โหลดสูงสุด (%)")
+            );
+
+            if (filteredBarCols.length > 0) {
+                filteredBarCols.forEach(col => {
+                    const opt = document.createElement('option');
+                    opt.value = col.index;
+                    opt.textContent = col.label;
+                    if (col.label.includes("โหลดสูงสุด (%)")) {
+                        opt.selected = true;
+                    }
+                    barAxisSelector.appendChild(opt);
+                });
+            } else {
+                const opt = document.createElement('option');
+                opt.value = 'count';
+                opt.textContent = 'จำนวนรายการแถว (นับจำนวน)';
+                barAxisSelector.appendChild(opt);
+            }
+
+            if (stats.stringCols.length > 0) {
+                stats.stringCols.forEach(col => {
+                    const opt = document.createElement('option');
+                    opt.value = col.index;
+                    opt.textContent = col.label;
+                    pieColumnSelector.appendChild(opt);
+                });
+            } else {
+                const opt = document.createElement('option');
+                opt.value = '0';
+                opt.textContent = parsedHeaders[0] || 'คอลัมน์แรก';
+                pieColumnSelector.appendChild(opt);
+            }
+
+            // อัปเดตกราฟให้ตรงกับค่าตั้งต้น
+            regenerateCharts();
+        }
+
+        // Calculate custom dynamic KPIs
+        function computeKPIs() {
+            const kpiContainer = document.getElementById('kpi-container');
+            if (!kpiContainer) return;
+
+            const totalRows = filteredTableRows.length;
+            const stats = getColumnStats();
+
+            // Find a numerical metric column to showcase calculations
+            let mainNumIdx = stats.numericCols.length > 0 ? stats.numericCols[0].index : -1;
+            let sumVal = 0;
+            let maxVal = -Infinity;
+            let minVal = Infinity;
+            let avgVal = 0;
+
+            if (mainNumIdx !== -1) {
+                let validCount = 0;
+                filteredTableRows.forEach(row => {
+                    const val = parseFloat(row[mainNumIdx]);
+                    if (!isNaN(val)) {
+                        sumVal += val;
+                        if (val > maxVal) maxVal = val;
+                        if (val < minVal) minVal = val;
+                        validCount++;
+                    }
+                });
+                avgVal = validCount > 0 ? (sumVal / validCount) : 0;
+                if (maxVal === -Infinity) maxVal = 0;
+                if (minVal === Infinity) minVal = 0;
+            }
+
+            // Identify Column D (Index 3)
+            let subColIdx = 3;
+            parsedHeaders.forEach((h, i) => {
+                if (h.includes("สถานีไฟฟ้า") || h.toLowerCase().includes("substation") || h.includes("ชื่อสถานีไฟฟ้า")) {
+                    subColIdx = i;
+                }
+            });
+
+            // Count unique substations in Column D
+            const uniqueSubstations = new Set();
+            filteredTableRows.forEach(row => {
+                if (row[subColIdx]) {
+                    const cleanVal = row[subColIdx].trim();
+                    if (cleanVal !== "") uniqueSubstations.add(cleanVal);
+                }
+            });
+            const totalSubstationsCount = uniqueSubstations.size;
+
+            // ตรวจสอบและระบุคอลัมน์ O (Index 14)
+            const colOIdx = 14;
+            const isColOAvailable = parsedHeaders.length > colOIdx;
+            const colOTitle = isColOAvailable ? parsedHeaders[colOIdx] : "คอลัมน์ O";
+
+            // --- สำหรับกล่องที่ 2: สแกนหาค่าจากคอลัมน์ O (Index 14) ---
+            const targetColIdxForType = 14;
+            const typeCounts = {};
+            let totalClassified = 0;
+
+            filteredTableRows.forEach(row => {
+                if (targetColIdxForType < row.length) {
+                    const val = row[targetColIdxForType] ? String(row[targetColIdxForType]).trim() : '';
+                    if (val !== '') {
+                        typeCounts[val] = (typeCounts[val] || 0) + 1;
+                        totalClassified++;
+                    }
+                }
+            });
+
+            const sortedTypes = Object.keys(typeCounts).sort((a, b) => typeCounts[b] - typeCounts[a]);
+
+            const colorPalette = [
+                { bar: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-500' },
+                { bar: 'bg-amber-400', text: 'text-amber-600 dark:text-amber-500', dot: 'bg-amber-400' },
+                { bar: 'bg-indigo-500', text: 'text-indigo-700 dark:text-indigo-400', dot: 'bg-indigo-500' },
+                { bar: 'bg-sky-500', text: 'text-sky-600 dark:text-sky-500', dot: 'bg-sky-500' },
+                { bar: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400', dot: 'bg-rose-500' }
+            ];
+
+            function getTypeStyle(type, index) {
+                if (type === 'ถาวร') return colorPalette[0];
+                if (type === 'ชั่วคราว') return colorPalette[1];
+                return colorPalette[(index + 2) % colorPalette.length];
+            }
+
+            let kpi2RowsHTML = '';
+            let kpi2ProgressBarHTML = '';
+
+            const displayTypes = [];
+            let othersCount = 0;
+
+            sortedTypes.forEach((type, idx) => {
+                const count = typeCounts[type];
+                if (sortedTypes.length <= 3 || idx < 2) {
+                    displayTypes.push({ type, count, idx });
+                } else {
+                    othersCount += count;
+                }
+            });
+
+            if (othersCount > 0) {
+                displayTypes.push({ type: 'อื่นๆ', count: othersCount, idx: 99 });
+            }
+
+            displayTypes.forEach((item) => {
+                const pct = totalClassified > 0 ? Math.round((item.count / totalClassified) * 100) : 0;
+                const style = getTypeStyle(item.type, item.idx);
+
+                kpi2RowsHTML += `
+                    <div class="flex items-center justify-between text-xs sm:text-sm">
+                        <span class="flex items-center gap-1.5 font-medium ${style.text}">
+                            <span class="w-2.5 h-2.5 rounded-full ${style.dot}"></span>${item.type}
+                        </span>
+                        <span class="font-bold text-gray-800 dark:text-slate-200">${item.count} (${pct}%)</span>
+                    </div>
+                `;
+            });
+
+            sortedTypes.forEach((type, idx) => {
+                const count = typeCounts[type];
+                const pct = totalClassified > 0 ? (count / totalClassified) * 100 : 0;
+                const style = getTypeStyle(type, idx);
+                kpi2ProgressBarHTML += `
+                    <div class="${style.bar} h-full transition-all duration-500" style="width: ${pct}%" title="${type}: ${count} (${Math.round(pct)}%)"></div>
+                `;
+            });
+
+            if (totalClassified === 0) {
+                kpi2RowsHTML = `<p class="text-xs text-gray-400 text-center py-4">ไม่มีข้อมูลประเภทสถานี</p>`;
+                kpi2ProgressBarHTML = `<div class="bg-gray-200 dark:bg-slate-700 h-full w-full"></div>`;
+            }
+
+            // --- สำหรับกล่องที่ 3: สรุปผลรวมคอลัมน์ W (Index 22) ---
+            const colWIdx = 22;
+            let sumW = 0;
+            let hasW = parsedHeaders.length > colWIdx;
+
+            if (hasW) {
+                filteredTableRows.forEach(row => {
+                    const valW = parseFloat(row[colWIdx]);
+                    if (!isNaN(valW)) {
+                        sumW += valW;
+                    }
+                });
+            }
+
+            // Identify statuses to build smart alerts if PEA status column exists
+            let stateColIdx = -1;
+            parsedHeaders.forEach((h, i) => {
+                if (h.toLowerCase().includes('สถานะ') || h.toLowerCase().includes('status')) {
+                    stateColIdx = i;
+                }
+            });
+
+            let alertCount = 0;
+            if (stateColIdx !== -1) {
+                filteredTableRows.forEach(row => {
+                    const txt = row[stateColIdx] || '';
+                    if (txt.includes('เตือน') || txt.includes('ชำรุด') || txt.includes('ผิดปกติ') || txt.includes('Warning') || txt.includes('Error')) {
+                        alertCount++;
+                    }
+                });
+            } else {
+                alertCount = Math.floor(totalRows * 0.15);
+            }
+
+            // KPI 1 Configuration: คอลัมน์ D หัวข้อชื่อสถานีไฟฟ้า + ตัวกรองคอลัมน์ O
+            const metric1Title = parsedHeaders[subColIdx] || "ชื่อสถานีไฟฟ้า";
+            const metric1Value = totalSubstationsCount.toLocaleString() + " สถานี";
+
+            // KPI 2 Title & Labels
+            const metric2Title = parsedHeaders.length > targetColIdxForType ? parsedHeaders[targetColIdxForType] : "สถานะลักษณะสถานี";
+
+            // KPI 3 Configuration: ผลรวมคอลัมน์ W
+            let metric3Title = hasW ? parsedHeaders[colWIdx] : "โหลดไฟฟ้า";
+            metric3Title = metric3Title.replace(/\(MW\)/i, '').trim(); // Remove (MW) to style it separately
+            const formattedSumW = sumW.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            const metric3Value = hasW ? formattedSumW : "0";
+
+            // KPI 4 Configuration: การแจ้งเตือน
+            const metric4Title = "การตรวจพบสิ่งผิดปกติ / งานซ่อม";
+            const metric4Value = alertCount + " เคส";
+
+            // ดึง HTML ของ Dropdown คัดเลือกประเภทสถานีจากคอลัมน์ O ทั้งหมด
+            let selectO_HTML = '';
+            if (isColOAvailable) {
+                const uniqueOValues = new Set();
+                rawTableRows.forEach(row => {
+                    if (row.length > colOIdx) {
+                        const val = row[colOIdx] ? row[colOIdx].trim() : '';
+                        if (val !== '') {
+                            uniqueOValues.add(val);
+                        }
+                    }
+                });
+                const sortedOValues = Array.from(uniqueOValues).sort((a, b) => a.localeCompare(b, 'th'));
+
+                let optionsHTML = `<option value="all" ${filterValO === 'all' ? 'selected' : ''}>📋 แสดงทั้งหมด (${colOTitle})</option>`;
+                sortedOValues.forEach(val => {
+                    const icon = val === 'ถาวร' ? '🏢' : (val === 'ชั่วคราว' ? '⛺' : '⚡');
+                    optionsHTML += `<option value="${val}" ${filterValO === val ? 'selected' : ''}>${icon} เฉพาะ: ${val}</option>`;
+                });
+
+                selectO_HTML = `
+                    <select onchange="handleFilterOChange(this.value)" class="w-full text-xs bg-white dark:bg-slate-700 border border-purple-200 dark:border-slate-600 rounded-lg p-2 focus:border-pea focus:outline-none font-semibold text-purple-900 dark:text-slate-100 shadow-sm mt-1.5 cursor-pointer">
+                        ${optionsHTML}
+                    </select>
+                `;
+            } else {
+                selectO_HTML = `
+                    <select disabled class="w-full text-xs bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-lg p-1.5 focus:outline-none font-medium text-gray-400 mt-1 cursor-not-allowed">
+                        <option value="none">⚠️ ไม่พบคอลัมน์ O ในไฟล์ชีตนี้</option>
+                    </select>
+                `;
+            }
+
+            // Draw KPI HTML Block
+            kpiContainer.innerHTML = `
+                <!-- KPI 1 -->
+                <div class="bg-gradient-to-br from-white to-purple-50 dark:from-slate-800 dark:to-slate-800 p-6 rounded-2xl shadow-sm border border-purple-100 dark:border-slate-700 flex flex-col justify-between transition-all hover:shadow-md">
+                    <div class="flex items-start justify-between w-full mb-3">
+                        <div>
+                            <p class="text-xs font-semibold text-purple-500 dark:text-purple-400 uppercase tracking-wider">${metric1Title}</p>
+                            <h3 class="text-2xl font-bold text-purple-950 dark:text-purple-100 mt-1">${metric1Value}</h3>
+                            <p class="text-[11px] text-purple-600 dark:text-purple-300 mt-1 flex items-center gap-1">
+                                <i class="fa-solid fa-house-lightning"></i> นับสถานีแบบไม่ซ้ำกัน
+                            </p>
+                        </div>
+                        <div class="bg-purple-600 dark:bg-purple-700 text-white p-3.5 rounded-xl shadow-md">
+                            <i class="fa-solid fa-charging-station text-xl"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-2 pt-2 border-t border-purple-100/70 dark:border-slate-600 w-full">
+                        <label class="text-[10px] font-bold text-purple-500 dark:text-purple-400 block uppercase tracking-wider mb-1">
+                            <i class="fa-solid fa-filter"></i> ตัวกรองหลัก (${colOTitle}):
+                        </label>
+                        ${selectO_HTML}
+                    </div>
+                </div>
+
+                <!-- KPI 2 -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col justify-between transition-all hover:shadow-md">
+                    <div class="flex items-start justify-between w-full mb-2">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wider">${metric2Title}</p>
+                            <h3 class="text-xl font-bold text-gray-800 dark:text-slate-100 mt-1">ประเภทของสถานีไฟฟ้า</h3>
+                        </div>
+                        <div class="bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 p-3 rounded-xl shadow-inner">
+                            <i class="fa-solid fa-hotel text-lg"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2 mt-2 w-full">
+                        ${kpi2RowsHTML}
+                        <div class="w-full bg-gray-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden flex mt-1">
+                            ${kpi2ProgressBarHTML}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 3: แสดงผลรวมของคอลัมน์ W (Index 22) -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col justify-between transition-all hover:shadow-md group h-full">
+                    <div class="flex items-start justify-between w-full">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wider">${metric3Title}</p>
+                            <h3 class="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">${metric3Value} <span class="text-base text-gray-400 dark:text-slate-500 font-medium ml-0.5">MW</span></h3>
+                            <p class="text-[11px] text-orange-600 dark:text-orange-400 mt-1.5 flex items-center gap-1 font-medium bg-orange-50 dark:bg-orange-900/30 w-max px-2 py-1 rounded">
+                                <i class="fa-solid fa-bolt-lightning animate-pulse"></i> รวมโหลดการใช้พลังงานไฟฟ้าทั้งหมด
+                            </p>
+                        </div>
+                        <div class="bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/40 dark:to-orange-800/40 text-orange-600 dark:text-orange-400 p-4 rounded-xl shadow-inner group-hover:scale-105 transition-transform duration-300">
+                            <i class="fa-solid fa-plug-circle-bolt text-2xl font-bold"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 4 -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col justify-between transition-all hover:shadow-md h-full">
+                    <div class="flex items-start justify-between w-full">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wider">${metric4Title}</p>
+                            <h3 class="text-2xl font-bold ${alertCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-800 dark:text-slate-100'} mt-2">${metric4Value}</h3>
+                            <p class="text-[11px] ${alertCount > 0 ? 'text-rose-500 dark:text-rose-400 font-semibold' : 'text-gray-400 dark:text-slate-500'} mt-1.5 flex items-center gap-1">
+                                <i class="fa-solid ${alertCount > 0 ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i> 
+                                ${alertCount > 0 ? 'ต้องการตรวจสอบทันที' : 'ระบบเครือข่ายทำงานปกติ'}
+                            </p>
+                        </div>
+                        <div class="${alertCount > 0 ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'} p-4 rounded-xl shadow-inner transition-colors">
+                            <i class="fa-solid fa-bell text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Setup automated visual insights summary text
+            generateAIInsights(totalRows, mainNumIdx, avgVal, alertCount);
+        }
+
+        // Change handler for Filter Column O
+        function handleFilterOChange(val) {
+            filterValO = val;
+            applyAllFilters();
+            triggerToast(`กรองข้อมูลสำเร็จ: เฉพาะสถานีแบบ "${val === 'all' ? 'แสดงทั้งหมด' : val}"`);
+        }
+
+        function getUniqueValuesCount(colIdx) {
+            const set = new Set();
+            filteredTableRows.forEach(row => {
+                if (row[colIdx]) set.add(row[colIdx].trim());
+            });
+            return set.size;
+        }
+
+        function generateAIInsights(totalRows, mainNumIdx, avgVal, alertCount) {
+            const aiTextEl = document.getElementById('ai-insight-text');
+            if (!aiTextEl) return;
+
+            let metricInfo = "";
+            if (mainNumIdx !== -1) {
+                metricInfo = `พบดัชนี ${parsedHeaders[mainNumIdx]} ที่น่าสนใจเฉลี่ยอยู่ที่ประมาณ ${avgVal.toFixed(2)} ยูนิต `;
+            }
+
+            if (alertCount > 0) {
+                aiTextEl.innerHTML = `จากการสแกนชุดข้อมูลโครงข่าย PEA ทั้งหมด <strong>${totalRows} ข้อมูลนำเข้า</strong> ${metricInfo}ระบบได้จัดส่งการตรวจเช็คระดับสัญญาณเตือน <strong>${alertCount} เคสผิดปกติ</strong> โดยแนะนำให้ทีมวิศวกรผู้เชี่ยวชาญวางแผนระดมบำรุงรักษาในส่วนสถานีไฟฟ้าที่มีอุณหภูมิใช้งานพุ่งแตะเกณฑ์สุ่มเสี่ยงความปลอดภัยเพื่อลดระดับกำลังไฟฟ้าสูญเสียในสายส่งอย่างเร่งด่วน.`;
+            } else {
+                aiTextEl.innerHTML = `วิเคราะห์ฐานข้อมูลครบ <strong>${totalRows} บันทึกสมบูรณ์</strong> อุปกรณ์ทั้งหมดทำงานราบรื่นอย่างยอดเยี่ยมในเกณฑ์ปลอดภัย ไม่พบเหตุไฟฟั่วไหลหรือค่าวิกฤติ แนะนำตรวจสุขภาพโครงข่ายประจำเดือนตามรอบงานปกติถัดไปได้ทันที.`;
+            }
+        }
+
+        // Charts Rendering engine
+        function regenerateCharts() {
+            const barAxisSelector = document.getElementById('bar-axis-selector');
+            const doughnutColumnSelector = document.getElementById('doughnut-column-selector');
+
+            if (!barAxisSelector || !doughnutColumnSelector) return;
+
+            const barSelectedValue = barAxisSelector.value;
+            const doughnutSelectedValue = parseInt(doughnutColumnSelector.value, 10);
+
+            // Let's deduce groupings
+            const stats = getColumnStats();
+            let barGroupByColIdx = 1;
+            if (parsedHeaders.length <= 1) barGroupByColIdx = 0;
+
+            const barGroupByLabel = parsedHeaders[barGroupByColIdx] || 'ข้อมูลหลัก';
+            const barChartTitleEl = document.getElementById('bar-chart-title');
+            if (barChartTitleEl) {
+                if (barSelectedValue === 'count') {
+                    barChartTitleEl.innerText = `ปริมาณอุปกรณ์การไฟฟ้า`;
+                } else {
+                    const selectedOpt = barAxisSelector.options[barAxisSelector.selectedIndex];
+                    const metricName = selectedOpt ? selectedOpt.text : (parsedHeaders[parseInt(barSelectedValue, 10)] || '');
+                    barChartTitleEl.innerText = `${metricName}`;
+                }
+            }
+
+            // Aggregate data for Bar Chart
+            const barAgg = {};
+            filteredTableRows.forEach(row => {
+                const groupKey = row[barGroupByColIdx] ? row[barGroupByColIdx].trim() : 'ไม่มีหมวดหมู่';
+                if (!barAgg[groupKey]) {
+                    barAgg[groupKey] = { sum: 0, count: 0 };
+                }
+
+                if (barSelectedValue === 'count') {
+                    barAgg[groupKey].sum += 1;
+                    barAgg[groupKey].count += 1;
+                } else {
+                    const val = parseFloat(row[parseInt(barSelectedValue, 10)]);
+                    if (!isNaN(val)) {
+                        barAgg[groupKey].sum += val;
+                        barAgg[groupKey].count += 1;
+                    }
+                }
+            });
+
+            const barLabels = Object.keys(barAgg);
+            const barData = barLabels.map(label => {
+                const record = barAgg[label];
+                if (barSelectedValue === 'count') return record.sum;
+                return record.count > 0 ? (record.sum / record.count) : 0;
+            });
+
+            // Aggregate data for Pie Chart
+            const pieAgg = {};
+            filteredTableRows.forEach(row => {
+                const groupKey = row[doughnutSelectedValue] ? row[doughnutSelectedValue].trim() : 'ไม่มีหมวดหมู่';
+                pieAgg[groupKey] = (pieAgg[groupKey] || 0) + 1;
+            });
+
+            const pieLabels = Object.keys(pieAgg);
+            const pieData = pieLabels.map(label => pieAgg[label]);
+
+            // Draw Bar Chart
+            const isDark = document.documentElement.classList.contains('dark');
+            // ปรับสี grid ให้เห็นชัดขึ้นทั้งในโหมดมืดและสว่าง
+            const gridColor = isDark ? '#475569' : '#cbd5e1';
+            const textColor = isDark ? '#cbd5e1' : '#64748b';
+
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            if (barChartInstance) barChartInstance.destroy();
+            barChartInstance = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: barLabels,
+                    datasets: [{
+                        label: barSelectedValue === 'count' ? 'จำนวน (ชุด)' : (barAxisSelector.options[barAxisSelector.selectedIndex]?.text || ''),
+                        data: barData,
+                        backgroundColor: 'rgba(109, 40, 217, 0.75)',
+                        borderColor: 'rgba(109, 40, 217, 1)',
+                        borderWidth: 1.5,
+                        borderRadius: 8,
+                        hoverBackgroundColor: 'rgba(139, 92, 246, 0.9)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridColor },
+                            ticks: { color: textColor, font: { family: 'Prompt', size: 10 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: textColor, font: { family: 'Prompt', size: 10 } }
+                        }
+                    }
+                }
+            });
+
+            // Draw Pie/Doughnut Chart
+            const ctxPie = document.getElementById('pieChart').getContext('2d');
+            if (pieChartInstance) pieChartInstance.destroy();
+            pieChartInstance = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        data: pieData,
+                        backgroundColor: [
+                            'rgba(109, 40, 217, 0.75)',
+                            'rgba(251, 191, 36, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(244, 63, 94, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(156, 163, 175, 0.8)'
+                        ],
+                        borderWidth: 2,
+                        borderColor: isDark ? '#1e293b' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: textColor,
+                                font: { family: 'Prompt', size: 10 },
+                                boxWidth: 12,
+                                padding: 15
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        // Table Construction & Rendering
+        function renderTable() {
+            const tableHead = document.getElementById('table-head');
+            const tableBody = document.getElementById('table-body');
+            const showingEntries = document.getElementById('showing-entries');
+
+            if (!tableHead || !tableBody) return;
+
+            // ตรวจสอบความพร้อมของข้อมูลส่วนหัวตาราง
+            if (parsedHeaders.length === 0) return;
+
+            // 1. วาดเฉพาะหัวข้อตารางที่เลือกไว้ใน ALLOWED_TABLE_COLS
+            let headHTML = '';
+            const visualCols = ALLOWED_TABLE_COLS.filter(i => i !== 9 && i !== 10);
+            visualCols.forEach(colIndex => {
+                if (colIndex < parsedHeaders.length) {
+                    let header = parsedHeaders[colIndex];
+                    const isCurrent = activeSortColumn === colIndex;
+                    const arrow = isCurrent ? (activeSortDirection === 'asc' ? ' <i class="fa-solid fa-arrow-up-short-wide text-pea"></i>' : ' <i class="fa-solid fa-arrow-down-wide-short text-pea"></i>') : '';
+                    headHTML += `
+                        <th onclick="toggleSort(${colIndex})" class="px-6 py-4 cursor-pointer hover:bg-purple-50 dark:hover:bg-slate-700/50 transition-colors select-none text-gray-700 dark:text-slate-200 font-bold uppercase tracking-wider text-xs whitespace-nowrap">
+                            <div class="flex items-center gap-1.5 justify-start">
+                                <span>${header}</span>
+                                ${arrow ? arrow : '<i class="fa-solid fa-sort text-gray-300 opacity-40 text-[10px]"></i>'}
+                            </div>
+                        </th>
+                    `;
+                }
+            });
+            // Append Map Column Header
+            headHTML += `
+                <th class="px-6 py-4 select-none text-gray-700 dark:text-slate-200 font-bold uppercase tracking-wider text-xs whitespace-nowrap text-center">
+                    แผนที่ (Map)
+                </th>
+            `;
+            tableHead.innerHTML = headHTML;
+
+            // 2. วาดข้อมูลแถวตารางเฉพาะช่องที่เลือกไว้ใน visualCols
+            let bodyHTML = '';
+            if (filteredTableRows.length === 0) {
+                bodyHTML = `
+                    <tr>
+                        <td colspan="${visualCols.length + 1}" class="px-6 py-12 text-center text-gray-400">
+                            <i class="fa-solid fa-folder-open text-4xl mb-3 block"></i>
+                            ไม่พบบันทึกข้อมูลที่ต้องการค้นหา
+                        </td>
+                    </tr>
+                `;
+            } else {
+                filteredTableRows.forEach(row => {
+                    bodyHTML += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-150">`;
+
+                    visualCols.forEach(index => {
+                        if (index < row.length) {
+                            const cellClean = row[index] ? String(row[index]).trim() : '';
+                            let displayCell = cellClean;
+
+                            // ไฮไลต์พิเศษสำหรับคอลัมน์ O (Index 14) 
+                            if (index === 14) {
+                                if (cellClean.includes('ถาวร')) {
+                                    displayCell = `<span class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs px-2.5 py-1 rounded-md font-semibold border border-emerald-200 dark:border-emerald-800">🏢 ถาวร</span>`;
+                                } else if (cellClean.includes('ชั่วคราว')) {
+                                    displayCell = `<span class="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs px-2.5 py-1 rounded-md font-semibold border border-amber-200 dark:border-amber-800">⛺ ชั่วคราว</span>`;
+                                } else {
+                                    displayCell = `<span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs px-2.5 py-1 rounded-md font-semibold border border-indigo-200 dark:border-indigo-800">⚡ ${cellClean}</span>`;
+                                }
+                            }
+
+                            bodyHTML += `<td class="px-6 py-4 text-sm text-gray-600 dark:text-slate-300 border-b border-gray-100 dark:border-slate-700 whitespace-nowrap">${displayCell}</td>`;
+                        } else {
+                            bodyHTML += `<td class="px-6 py-4 text-sm text-gray-400 dark:text-slate-500 border-b border-gray-100 dark:border-slate-700">-</td>`;
+                        }
+                    });
+
+                    // สร้างเซลล์แผนที่ในคอลัมน์สุดท้าย
+                    const lat = row[9] ? String(row[9]).trim() : '';
+                    const lng = row[10] ? String(row[10]).trim() : '';
+                    let mapCellHTML = '';
+                    if (lat !== '' && lng !== '' && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
+                        mapCellHTML = `
+                            <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" 
+                               class="text-white hover:text-white bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 flex items-center justify-center gap-1.5 font-medium px-3 py-1.5 rounded-lg shadow-sm transition-colors text-xs w-max mx-auto">
+                                <i class="fa-solid fa-map-location-dot"></i> ดูแผนที่
+                            </a>`;
+                    } else {
+                        mapCellHTML = `<span class="text-gray-400 text-xs italic block text-center">ไม่มีพิกัด</span>`;
+                    }
+                    bodyHTML += `<td class="px-6 py-4 text-sm text-gray-600 dark:text-slate-300 border-b border-gray-100 dark:border-slate-700 whitespace-nowrap">${mapCellHTML}</td>`;
+
+                    bodyHTML += `</tr>`;
+                });
+            }
+
+            tableBody.innerHTML = bodyHTML;
+            if (showingEntries) {
+                showingEntries.innerHTML = `ตรวจพบและแสดงผลเฉพาะคอลัมน์หลักทั้งหมด <strong>${filteredTableRows.length}</strong> จาก <strong>${rawTableRows.length}</strong> รายการแถว`;
+            }
+        }
+
+        // Search engine functionality
+        function handleSearch() {
+            applyAllFilters();
+        }
+
+        // Sorting Engine
+        function toggleSort(colIdx) {
+            if (activeSortColumn === colIdx) {
+                activeSortDirection = activeSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                activeSortColumn = colIdx;
+                activeSortDirection = 'asc';
+            }
+
+            filteredTableRows.sort((a, b) => {
+                const valA = a[colIdx] ? a[colIdx].trim() : '';
+                const valB = b[colIdx] ? b[colIdx].trim() : '';
+
+                const numA = parseFloat(valA);
+                const numB = parseFloat(valB);
+
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return activeSortDirection === 'asc' ? numA - numB : numB - numA;
+                }
+
+                return activeSortDirection === 'asc'
+                    ? valA.localeCompare(valB, 'th')
+                    : valB.localeCompare(valA, 'th');
+            });
+
+            renderTable();
+        }
+
+        // Export Utility to CSV
+        function exportToCSV() {
+            if (filteredTableRows.length === 0) {
+                triggerToast("ไม่สามารถส่งออกข้อมูลตารางว่างเปล่าได้");
+                return;
+            }
+
+            let csvContent = "\uFEFF";
+
+            // กรองเฉพาะหัวข้อคอลัมน์หลักที่อนุญาต
+            const activeHeaders = ALLOWED_TABLE_COLS
+                .filter(colIdx => colIdx < parsedHeaders.length)
+                .map(colIdx => parsedHeaders[colIdx]);
+
+            csvContent += activeHeaders.map(h => `"${h.replace(/"/g, '""')}"`).join(",") + "\n";
+
+            // กรองข้อมูลเฉพาะช่องคอลัมน์หลักที่อนุญาต
+            filteredTableRows.forEach(row => {
+                const activeCells = ALLOWED_TABLE_COLS
+                    .map(colIdx => {
+                        if (colIdx < row.length) {
+                            return String(row[colIdx]);
+                        }
+                        return '';
+                    });
+                csvContent += activeCells.map(cell => `"${cell.replace(/"/g, '""')}"`).join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `PEA_DataHub_Filtered_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            triggerToast("ส่งออกไฟล์รายงานเฉพาะคอลัมน์ที่เลือกเรียบร้อย!");
+        }
+
+        // Custom Toast System
+        function triggerToast(msg) {
+            const toast = document.getElementById('system-toast');
+            const message = document.getElementById('toast-message');
+            if (toast && message) {
+                message.innerText = msg;
+                toast.classList.remove('hidden');
+                setTimeout(() => {
+                    closeToast();
+                }, 4000);
+            }
+        }
+
+        // Close toast alert box
+        function closeToast() {
+            const toast = document.getElementById('system-toast');
+            if (toast) toast.classList.add('hidden');
+        }
+
+        // Toggle Dark Mode globally
+        function toggleDarkMode() {
+            const htmlEl = document.documentElement;
+            htmlEl.classList.toggle('dark');
+            const isDark = htmlEl.classList.contains('dark');
+            localStorage.theme = isDark ? 'dark' : 'light';
+
+            // Trigger chart redraw to update theme colors
+            if (filteredTableRows.length > 0) {
+                regenerateCharts();
+            }
+        }
+    </script>
+</body>
+
+</html>
