@@ -122,7 +122,7 @@
 
     <!-- Top Navbar -->
     <nav class="glass-header text-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-4">
                     <!-- PEA Logo / Icon Wrapper -->
@@ -159,7 +159,7 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 w-full">
+    <main class="flex-grow max-w-[1600px] mx-auto px-4 py-8 sm:px-6 lg:px-8 w-full">
 
         <!-- Header Section -->
         <div
@@ -248,10 +248,10 @@
             </div>
 
             <!-- Charts & Custom Controls Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 gap-6">
                 <!-- Bar Chart Wrapper -->
                 <div
-                    class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 lg:col-span-2 flex flex-col justify-between transition-colors">
+                    class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col justify-between transition-colors">
                     <div>
                         <div class="flex justify-between items-start mb-4">
                             <h3 class="text-lg font-bold text-gray-800 dark:text-slate-100 flex items-center gap-2">
@@ -274,29 +274,6 @@
                         class="text-[11px] text-gray-400 dark:text-slate-500 mt-3 border-t pt-2 border-gray-50 dark:border-slate-700 flex items-center gap-1">
                         <i class="fa-solid fa-circle-info"></i>
                         ปรับเปลี่ยนแกนวิเคราะห์เชิงสถิติได้ตามต้องการผ่านตัวเลือกมุมขวาบน
-                    </p>
-                </div>
-
-                <!-- Doughnut Chart Wrapper -->
-                <div
-                    class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col justify-between transition-colors">
-                    <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-bold text-gray-800 dark:text-slate-100 flex items-center gap-2">
-                                <i class="fa-solid fa-chart-pie text-pea"></i> สัดส่วนหมวดหมู่
-                            </h3>
-                            <select id="doughnut-column-selector" onchange="regenerateCharts()"
-                                class="text-xs border border-gray-200 dark:border-slate-600 rounded-lg p-1.5 focus:border-pea focus:outline-none bg-gray-50 dark:bg-slate-700 font-medium text-gray-600 dark:text-slate-200">
-                                <!-- Dynamic Options for string columns -->
-                            </select>
-                        </div>
-                        <div class="relative h-64 w-full flex justify-center items-center">
-                            <canvas id="pieChart"></canvas>
-                        </div>
-                    </div>
-                    <p
-                        class="text-[11px] text-gray-400 dark:text-slate-500 mt-3 border-t pt-2 border-gray-50 dark:border-slate-700 text-center">
-                        สัดส่วนเปอร์เซ็นต์คำนวณตามจำนวนเรคอร์ดจริงทั้งหมด
                     </p>
                 </div>
             </div>
@@ -370,7 +347,7 @@
     <!-- Footer -->
     <footer class="bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 mt-auto transition-colors">
         <div
-            class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            class="max-w-[1600px] mx-auto px-4 py-6 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-2">
                 <i class="fa-solid fa-bolt text-pea text-lg"></i>
                 <p class="text-sm text-gray-500 dark:text-slate-400">© 2026 PEA Dashboard Data Hub.
@@ -636,12 +613,10 @@
         function populateSelectorDropdowns() {
             const stats = getColumnStats();
             const barAxisSelector = document.getElementById('bar-axis-selector');
-            const pieColumnSelector = document.getElementById('doughnut-column-selector');
 
-            if (!barAxisSelector || !pieColumnSelector) return;
+            if (!barAxisSelector) return;
 
             barAxisSelector.innerHTML = '';
-            pieColumnSelector.innerHTML = '';
 
             // กรองให้เลือกได้แค่ "โหลดสูงสุด (MW)" และ "โหลดสูงสุด (%)"
             const filteredBarCols = stats.numericCols.filter(col =>
@@ -664,66 +639,6 @@
                 opt.textContent = 'จำนวนรายการแถว (นับจำนวน)';
                 barAxisSelector.appendChild(opt);
             }
-
-            // กรองและคัดเลือกเฉพาะ 4 คอลัมน์ที่ต้องการแสดงในสัดส่วนหมวดหมู่
-            const targetPieSpecs = [
-                {
-                    label: "1 ชนิด-รูปแบบ",
-                    matches: ["ชนิด-รูปแบบ", "ประเภทอุปกรณ์", "ประเภท"],
-                    defaultIdx: 1
-                },
-                {
-                    label: "2 ระดับแรงดัน",
-                    matches: ["ระดับแรงดัน", "kv", "voltage"],
-                    defaultIdx: 2
-                },
-                {
-                    label: "3 ประเภทสถานี",
-                    matches: ["ประเภทสถานี", "คอลัมน์ o", "ลักษณะสถานี"],
-                    defaultIdx: 14
-                },
-                {
-                    label: "4 สถานีไฟฟ้า กฟผ.",
-                    matches: ["สถานีไฟฟ้า กฟผ.", "สถานีไฟฟ้ากฟผ.", "สถานีไฟฟ้า", "substation"],
-                    defaultIdx: 3
-                }
-            ];
-
-            targetPieSpecs.forEach(spec => {
-                let foundIdx = -1;
-
-                // 1. ค้นหาแบบตรงตัว
-                parsedHeaders.forEach((h, i) => {
-                    if (foundIdx !== -1) return;
-                    const hl = h.toLowerCase().trim();
-                    if (spec.matches.some(m => hl === m.toLowerCase().trim())) {
-                        foundIdx = i;
-                    }
-                });
-
-                // 2. ค้นหาแบบบางส่วน (contains)
-                if (foundIdx === -1) {
-                    parsedHeaders.forEach((h, i) => {
-                        if (foundIdx !== -1) return;
-                        const hl = h.toLowerCase();
-                        if (spec.matches.some(m => hl.includes(m.toLowerCase()))) {
-                            foundIdx = i;
-                        }
-                    });
-                }
-
-                // 3. ใช้ดัชนีเริ่มต้นหากไม่พบ
-                if (foundIdx === -1 && parsedHeaders.length > spec.defaultIdx) {
-                    foundIdx = spec.defaultIdx;
-                }
-
-                if (foundIdx !== -1) {
-                    const opt = document.createElement('option');
-                    opt.value = foundIdx;
-                    opt.textContent = spec.label;
-                    pieColumnSelector.appendChild(opt);
-                }
-            });
 
             // อัปเดตกราฟให้ตรงกับค่าตั้งต้น
             regenerateCharts();
@@ -811,21 +726,27 @@
             function getTypeStyle(type, index) {
                 if (type === 'ถาวร') return colorPalette[0];
                 if (type === 'ชั่วคราว') return colorPalette[1];
-                return colorPalette[(index + 2) % colorPalette.length];
+                if (type === 'ผู้ใช้ไฟระบบ') return colorPalette[2];
+                if (type === 'อื่นๆ') return colorPalette[4];
+                return colorPalette[(index + 3) % colorPalette.length];
             }
 
             let kpi2RowsHTML = '';
             let kpi2ProgressBarHTML = '';
 
             const displayTypes = [];
-            let othersCount = 0;
+            const countPermanent = typeCounts['ถาวร'] || 0;
+            const countTemporary = typeCounts['ชั่วคราว'] || 0;
+            const countSystemUser = typeCounts['ผู้ใช้ไฟระบบ'] || 0;
 
-            sortedTypes.forEach((type, idx) => {
-                const count = typeCounts[type];
-                if (sortedTypes.length <= 3 || idx < 2) {
-                    displayTypes.push({ type, count, idx });
-                } else {
-                    othersCount += count;
+            displayTypes.push({ type: 'ถาวร', count: countPermanent, idx: 0 });
+            displayTypes.push({ type: 'ชั่วคราว', count: countTemporary, idx: 1 });
+            displayTypes.push({ type: 'ผู้ใช้ไฟระบบ', count: countSystemUser, idx: 2 });
+
+            let othersCount = 0;
+            Object.keys(typeCounts).forEach(type => {
+                if (type !== 'ถาวร' && type !== 'ชั่วคราว' && type !== 'ผู้ใช้ไฟระบบ') {
+                    othersCount += typeCounts[type];
                 }
             });
 
@@ -847,13 +768,14 @@
                 `;
             });
 
-            sortedTypes.forEach((type, idx) => {
-                const count = typeCounts[type];
-                const pct = totalClassified > 0 ? (count / totalClassified) * 100 : 0;
-                const style = getTypeStyle(type, idx);
-                kpi2ProgressBarHTML += `
-                    <div class="${style.bar} h-full transition-all duration-500" style="width: ${pct}%" title="${type}: ${count} (${Math.round(pct)}%)"></div>
-                `;
+            displayTypes.forEach((item) => {
+                if (item.count > 0) {
+                    const pct = totalClassified > 0 ? (item.count / totalClassified) * 100 : 0;
+                    const style = getTypeStyle(item.type, item.idx);
+                    kpi2ProgressBarHTML += `
+                        <div class="${style.bar} h-full transition-all duration-500" style="width: ${pct}%" title="${item.type}: ${item.count} (${Math.round(pct)}%)"></div>
+                    `;
+                }
             });
 
             if (totalClassified === 0) {
@@ -868,6 +790,13 @@
 
             if (hasW) {
                 filteredTableRows.forEach(row => {
+                    // กรองค่าในคอลัมน์ O (Index 14) ไม่นำมารวมถ้ามีคำว่า spp หรือ vspp
+                    if (row.length > 14 && row[14]) {
+                        const valO = String(row[14]).toLowerCase();
+                        if (valO.includes('spp') || valO.includes('vspp')) {
+                            return;
+                        }
+                    }
                     const valW = parseFloat(row[colWIdx]);
                     if (!isNaN(valW)) {
                         sumW += valW;
@@ -922,6 +851,13 @@
 
             if (hasX) {
                 filteredTableRows.forEach(row => {
+                    // กรองค่าในคอลัมน์ O (Index 14) ไม่นำมารวมถ้ามีคำว่า spp หรือ vspp
+                    if (row.length > 14 && row[14]) {
+                        const valO = String(row[14]).toLowerCase();
+                        if (valO.includes('spp') || valO.includes('vspp')) {
+                            return;
+                        }
+                    }
                     if (row.length > colXIdx) {
                         const valX = parseFloat(row[colXIdx]);
                         if (!isNaN(valX)) {
@@ -933,6 +869,13 @@
 
             if (hasY) {
                 filteredTableRows.forEach(row => {
+                    // กรองค่าในคอลัมน์ O (Index 14) ไม่นำมารวมถ้ามีคำว่า spp หรือ vspp
+                    if (row.length > 14 && row[14]) {
+                        const valO = String(row[14]).toLowerCase();
+                        if (valO.includes('spp') || valO.includes('vspp')) {
+                            return;
+                        }
+                    }
                     if (row.length > colYIdx) {
                         const valY = parseFloat(row[colYIdx]);
                         if (!isNaN(valY)) {
@@ -944,8 +887,7 @@
             }
             const avgY = countY > 0 ? (sumY / countY) : 0;
 
-            let metric4Title = hasX ? parsedHeaders[colXIdx] : "โหลดสูงสุด";
-            metric4Title = metric4Title.replace(/\(MW\)/i, '').trim();
+            let metric4Title = "โหลดสูงสุด";
             const metric4Value = sumX.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
             const metric4SubValue = avgY.toFixed(2) + "%";
 
@@ -1117,6 +1059,18 @@
             // กรองสถานีและอุปกรณ์ที่มีโหลดสูงเกิน 70%
             const highLoadItems = [];
             filteredTableRows.forEach(row => {
+                // หากตัวกรองหลักเป็น 'แสดงทั้งหมด' (all) ให้แสดงเฉพาะประเภท 'ถาวร' หรือ 'ชั่วคราว'
+                if (filterValO === 'all') {
+                    if (row.length > 14 && row[14]) {
+                        const valO = String(row[14]).trim();
+                        if (valO !== 'ถาวร' && valO !== 'ชั่วคราว') {
+                            return;
+                        }
+                    } else {
+                        return; // ข้ามแถวที่ไม่มีข้อมูลประเภทสถานี
+                    }
+                }
+
                 if (loadPctColIdx < row.length) {
                     const loadPctVal = parseFloat(row[loadPctColIdx]);
                     if (!isNaN(loadPctVal) && loadPctVal > 70) {
@@ -1225,33 +1179,59 @@
         // Charts Rendering engine
         function regenerateCharts() {
             const barAxisSelector = document.getElementById('bar-axis-selector');
-            const doughnutColumnSelector = document.getElementById('doughnut-column-selector');
 
-            if (!barAxisSelector || !doughnutColumnSelector) return;
+            if (!barAxisSelector) return;
 
             const barSelectedValue = barAxisSelector.value;
-            const doughnutSelectedValue = parseInt(doughnutColumnSelector.value, 10);
 
-            // Let's deduce groupings
+            // Let's deduce groupings based on Card 1 filter
             const stats = getColumnStats();
-            let barGroupByColIdx = 1;
-            if (parsedHeaders.length <= 1) barGroupByColIdx = 0;
+            let barGroupByColIdx = 1; // ค่าเริ่มต้นเป็นประเภทอุปกรณ์ (Index 1)
+
+            const filterLower = filterValO.toLowerCase();
+            const isSpecialGroup = filterValO === 'ผู้ใช้ไฟระบบ' || 
+                                   filterValO === 'ยกเลิก' || 
+                                   filterValO === 'รอรื้อถอน' || 
+                                   filterLower.includes('spp') || 
+                                   filterLower.includes('vspp');
+
+            if (isSpecialGroup) {
+                barGroupByColIdx = 3; // เปลี่ยนแกน X เป็นรายชื่อสถานีไฟฟ้า (Index 3)
+            }
+            if (parsedHeaders.length <= barGroupByColIdx) barGroupByColIdx = 0;
 
             const barGroupByLabel = parsedHeaders[barGroupByColIdx] || 'ข้อมูลหลัก';
             const barChartTitleEl = document.getElementById('bar-chart-title');
             if (barChartTitleEl) {
+                const selectedOpt = barAxisSelector.options[barAxisSelector.selectedIndex];
+                const metricName = selectedOpt ? selectedOpt.text : (parsedHeaders[parseInt(barSelectedValue, 10)] || '');
+                let groupName = "ประเภทอุปกรณ์";
+                if (barGroupByColIdx === 3) {
+                    groupName = "สถานีไฟฟ้า";
+                }
+
                 if (barSelectedValue === 'count') {
-                    barChartTitleEl.innerText = `ปริมาณอุปกรณ์การไฟฟ้า`;
+                    barChartTitleEl.innerText = `ปริมาณอุปกรณ์การไฟฟ้า (จัดกลุ่มตาม${groupName})`;
                 } else {
-                    const selectedOpt = barAxisSelector.options[barAxisSelector.selectedIndex];
-                    const metricName = selectedOpt ? selectedOpt.text : (parsedHeaders[parseInt(barSelectedValue, 10)] || '');
-                    barChartTitleEl.innerText = `${metricName}`;
+                    barChartTitleEl.innerText = `${metricName} (จัดกลุ่มตาม${groupName})`;
                 }
             }
 
             // Aggregate data for Bar Chart
             const barAgg = {};
             filteredTableRows.forEach(row => {
+                // หากตัวกรองหลักเป็น 'แสดงทั้งหมด' (all) ให้แสดงเฉพาะประเภท 'ถาวร' หรือ 'ชั่วคราว'
+                if (filterValO === 'all') {
+                    if (row.length > 14 && row[14]) {
+                        const valO = String(row[14]).trim();
+                        if (valO !== 'ถาวร' && valO !== 'ชั่วคราว') {
+                            return;
+                        }
+                    } else {
+                        return; // ข้ามแถวที่ไม่มีข้อมูลประเภทสถานี
+                    }
+                }
+
                 const groupKey = row[barGroupByColIdx] ? row[barGroupByColIdx].trim() : 'ไม่มีหมวดหมู่';
                 if (!barAgg[groupKey]) {
                     barAgg[groupKey] = { sum: 0, count: 0 };
@@ -1275,16 +1255,6 @@
                 if (barSelectedValue === 'count') return record.sum;
                 return record.count > 0 ? (record.sum / record.count) : 0;
             });
-
-            // Aggregate data for Pie Chart
-            const pieAgg = {};
-            filteredTableRows.forEach(row => {
-                const groupKey = row[doughnutSelectedValue] ? row[doughnutSelectedValue].trim() : 'ไม่มีหมวดหมู่';
-                pieAgg[groupKey] = (pieAgg[groupKey] || 0) + 1;
-            });
-
-            const pieLabels = Object.keys(pieAgg);
-            const pieData = pieLabels.map(label => pieAgg[label]);
 
             // Draw Bar Chart
             const isDark = document.documentElement.classList.contains('dark');
@@ -1322,48 +1292,15 @@
                         },
                         x: {
                             grid: { display: false },
-                            ticks: { color: textColor, font: { family: 'Prompt', size: 10 } }
-                        }
-                    }
-                }
-            });
-
-            // Draw Pie/Doughnut Chart
-            const ctxPie = document.getElementById('pieChart').getContext('2d');
-            if (pieChartInstance) pieChartInstance.destroy();
-            pieChartInstance = new Chart(ctxPie, {
-                type: 'doughnut',
-                data: {
-                    labels: pieLabels,
-                    datasets: [{
-                        data: pieData,
-                        backgroundColor: [
-                            'rgba(109, 40, 217, 0.75)',
-                            'rgba(251, 191, 36, 0.8)',
-                            'rgba(16, 185, 129, 0.8)',
-                            'rgba(244, 63, 94, 0.8)',
-                            'rgba(59, 130, 246, 0.8)',
-                            'rgba(156, 163, 175, 0.8)'
-                        ],
-                        borderWidth: 2,
-                        borderColor: isDark ? '#1e293b' : '#ffffff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
+                            ticks: {
                                 color: textColor,
                                 font: { family: 'Prompt', size: 10 },
-                                boxWidth: 12,
-                                padding: 15
+                                autoSkip: false,
+                                maxRotation: 45,
+                                minRotation: 0
                             }
                         }
-                    },
-                    cutout: '65%'
+                    }
                 }
             });
         }
@@ -1402,8 +1339,10 @@
                         headerHTML = `<div class="flex flex-col items-center text-[10px] sm:text-[11px] leading-tight"><span>${part1}</span><span>${part2}</span></div>`;
                     }
 
+                    const headerWrapClass = colIndex === 3 ? 'min-w-[140px] whitespace-normal' : 'whitespace-nowrap';
+
                     headHTML += `
-                        <th onclick="toggleSort(${colIndex})" class="px-3 py-3 md:px-4 md:py-3.5 cursor-pointer hover:bg-purple-50 dark:hover:bg-slate-700/50 transition-colors select-none text-gray-700 dark:text-slate-200 font-bold uppercase tracking-wider text-xs whitespace-nowrap ${alignClass}">
+                        <th onclick="toggleSort(${colIndex})" class="px-2 py-3 md:px-3 md:py-3.5 cursor-pointer hover:bg-purple-50 dark:hover:bg-slate-700/50 transition-colors select-none text-gray-700 dark:text-slate-200 font-bold uppercase tracking-wider text-[11px] md:text-xs ${headerWrapClass} ${alignClass}">
                             <div class="flex items-center gap-1.5 ${justifyClass}">
                                 ${headerHTML}
                                 ${arrow ? arrow : '<i class="fa-solid fa-sort text-gray-300 opacity-40 text-[10px]"></i>'}
@@ -1455,9 +1394,11 @@
                                 }
                             }
 
-                            bodyHTML += `<td class="px-3 py-3 md:px-4 md:py-3.5 text-xs sm:text-[13px] text-gray-600 dark:text-slate-300 border-b border-gray-100 dark:border-slate-700 whitespace-nowrap ${cellAlignClass}">${displayCell}</td>`;
+                            const cellWrapClass = index === 3 ? 'min-w-[140px] whitespace-normal break-all' : 'whitespace-nowrap';
+
+                            bodyHTML += `<td class="px-2 py-3 md:px-3 md:py-3.5 text-[11px] md:text-[13px] text-gray-600 dark:text-slate-300 border-b border-gray-100 dark:border-slate-700 ${cellAlignClass} ${cellWrapClass}">${displayCell}</td>`;
                         } else {
-                            bodyHTML += `<td class="px-3 py-3 md:px-4 md:py-3.5 text-xs sm:text-[13px] text-gray-400 dark:text-slate-500 border-b border-gray-100 dark:border-slate-700 ${cellAlignClass}">-</td>`;
+                            bodyHTML += `<td class="px-2 py-3 md:px-3 md:py-3.5 text-[11px] md:text-[13px] text-gray-400 dark:text-slate-500 border-b border-gray-100 dark:border-slate-700 ${cellAlignClass} whitespace-nowrap">-</td>`;
                         }
                     });
 
