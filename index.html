@@ -260,7 +260,7 @@
                             </h3>
                             <div class="flex items-center gap-2">
                                 <span class="text-xs text-gray-400 dark:text-slate-400">แกน Y:</span>
-                                <select id="bar-axis-selector" onchange="regenerateCharts()"
+                                <select id="bar-axis-selector" onchange="handleBarAxisChange()"
                                     class="text-xs border border-gray-200 dark:border-slate-600 rounded-lg p-1.5 focus:border-pea focus:outline-none bg-gray-50 dark:bg-slate-700 font-medium text-gray-600 dark:text-slate-200">
                                     <!-- Dynamic Options for numerical columns -->
                                 </select>
@@ -369,8 +369,8 @@
         const SHEET_ID = '1FZ_Zhvn4Tuy7PZpFDcTQxCit-DX4hgxotxctQ5cOBTQ';
 
         // คอลัมน์ที่กำหนดให้แสดงผลเฉพาะในตารางแจกแจงรายละเอียด:
-        // A (Index 0), D (Index 3), E (Index 4), G (Index 6), H (Index 7), J (Index 9), K (Index 10), W (Index 22), X (Index 23), Y (Index 24), O (Index 14)
-        const ALLOWED_TABLE_COLS = [0, 3, 4, 6, 7, 9, 10, 22, 23, 24, 14];
+        // A (Index 0), D (Index 3), E (Index 4), G (Index 6), H (Index 7), J (Index 9), K (Index 10), W (Index 22), Z (Index 25), AA (Index 26), O (Index 14)
+        const ALLOWED_TABLE_COLS = [0, 3, 4, 6, 7, 9, 10, 22, 25, 26, 14];
 
         // High-Fidelity Backup/Mock Data representing PEA Grid assets - Expanded to 23 columns (including Column W at Index 22)
         const BACKUP_DATA = {
@@ -379,23 +379,23 @@
                 "พิกัดกระแส A (E)", "สถานะการทำงาน (F)", "อุณหภูมิใช้งาน °C (G)", "แบรนด์ผู้ผลิต (H)",
                 "ปีที่ติดตั้ง (I)", "ละติจูด (J)", "ลองจิจูด (K)", "ประวัติซ่อมแซม (L)",
                 "ระดับความเสี่ยง (M)", "ชนิดฉนวนอุปกรณ์ (N)", "คอลัมน์ O", "หมายเหตุ (P)",
-                "คอลัมน์ Q", "คอลัมน์ R", "คอลัมน์ S", "คอลัมน์ T", "คอลัมน์ U", "คอลัมน์ V", "พิกัดหม้อแปลงติดตั้ง (MW)",
-                "โหลดสูงสุด (MW)", "โหลดสูงสุด (%)"
+                "คอลัมน์ Q", "คอลัมน์ R", "คอลัมน์ S", "คอลัมน์ T", "คอลัมน์ U", "คอลัมน์ V", "พิกัดหม้อแปลงติดตั้ง (MVA)",
+                "โหลดสูงสุด พ.ค. 69 (MW)", "% โหลด พ.ค. 69", "โหลดสูงสุด ส.ค. 69 (MW)", "% โหลด ส.ค. 69"
             ],
             rows: [
-                ["TR-01", "Transformer", "115", "สถานีไฟฟ้าเชียงใหม่ 1", "800", "ปกติ", "65.5", "ABB", "2018", "18.7883", "98.9853", "ไม่มี", "ต่ำ", "น้ำมันหม้อแปลง", "ถาวร", "ถาวร", "", "", "", "", "", "", "12000", "45.5", "75.2"],
-                ["CB-12", "Circuit Breaker", "22", "สถานีไฟฟ้าเชียงใหม่ 1", "1250", "ปกติ", "42.1", "Siemens", "2019", "18.7883", "98.9853", "1 ครั้ง", "ต่ำ", "ก๊าซ SF6", "ถาวร", "ถาวร", "", "", "", "", "", "", "22000", "15.8", "45.1"],
-                ["TR-02", "Transformer", "115", "สถานีไฟฟ้าแม่ริม", "630", "เตือน (อุณหภูมิสูง)", "78.2", "ABB", "2015", "18.9142", "98.9463", "2 ครั้ง", "สูง", "น้ำมันหม้อแปลง", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "9450", "48.2", "78.2"],
-                ["DS-05", "Disconnect Switch", "22", "สถานีไฟฟ้าหางดง", "630", "ปกติ", "38.0", "Schneider", "2021", "18.6872", "98.9172", "ไม่มี", "ต่ำ", "อากาศ", "ถาวร", "ถาวร", "", "", "", "", "", "", "4500", "10.5", "38.0"],
-                ["CB-04", "Circuit Breaker", "115", "สถานีไฟฟ้าสารภี", "2000", "ปกติ", "45.8", "Siemens", "2017", "18.7150", "99.0360", "ไม่มี", "ต่ำ", "ก๊าซ SF6", "ถาวร", "ถาวร", "", "", "", "", "", "", "30000", "65.2", "45.8"],
-                ["TR-03", "Transformer", "115", "สถานีไฟฟ้าสันทราย", "800", "ปิดปรับปรุง", "25.0", "Toshiba", "2012", "18.8475", "99.0450", "3 ครั้ง", "ปานกลาง", "น้ำมันหม้อแปลง", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "12000", "5.0", "25.0"],
-                ["LA-09", "Lightning Arrester", "22", "สถานีไฟฟ้าสันกำแพง", "400", "ปกติ", "33.4", "Schneider", "2022", "18.7450", "99.1200", "ไม่มี", "ต่ำ", "โพลิเมอร์", "ถาวร", "ถาวร", "", "", "", "", "", "", "2800", "3.2", "33.4"],
-                ["CB-07", "Circuit Breaker", "22", "สถานีไฟฟ้าแม่โจ้", "1250", "ปกติ", "40.9", "ABB", "2020", "18.8988", "99.0125", "ไม่มี", "ต่ำ", "สุญญากาศ", "ถาวร", "ถาวร", "", "", "", "", "", "", "22000", "22.4", "40.9"],
-                ["TR-04", "Transformer", "115", "สถานีไฟฟ้าหางดง", "1000", "ปกติ", "58.3", "Toshiba", "2016", "18.6872", "98.9172", "1 ครั้ง", "ต่ำ", "น้ำมันหม้อแปลง", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "15000", "38.5", "58.3"],
-                ["DS-11", "Disconnect Switch", "115", "สถานีไฟฟ้าแม่ริม", "1200", "ชำรุดรอซ่อม", "92.4", "Schneider", "2014", "18.9142", "98.9463", "4 ครั้ง", "สูงมาก", "อากาศ", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "18000", "75.0", "92.4"],
-                ["CB-22", "Circuit Breaker", "22", "สถานีไฟฟ้าสันกำแพง", "1250", "ปกติ", "44.2", "Siemens", "2018", "18.7450", "99.1200", "ไม่มี", "ต่ำ", "ก๊าซ SF6", "ถาวร", "ถาวร", "", "", "", "", "", "", "22000", "28.6", "44.2"],
-                ["TR-05", "Transformer", "115", "สถานีไฟฟ้าแม่โจ้", "1250", "เตือน (อุณหภูมิสูง)", "76.9", "ABB", "2015", "18.8988", "99.0125", "2 ครั้ง", "สูง", "น้ำมันหม้อแปลง", "ถาวร", "ถาวร", "", "", "", "", "", "", "18750", "52.3", "76.9"],
-                ["CB-19", "Circuit Breaker", "22", "สถานีไฟฟ้าสันทราย", "630", "ปกติ", "39.5", "Schneider", "2021", "18.8475", "99.0450", "ไม่มี", "ต่ำ", "สุญญากาศ", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "4500", "18.9", "39.5"]
+                ["TR-01", "Transformer", "115", "สถานีไฟฟ้าเชียงใหม่ 1", "800", "ปกติ", "65.5", "ABB", "2018", "18.7883", "98.9853", "ไม่มี", "ต่ำ", "น้ำมันหม้อแปลง", "ถาวร", "ถาวร", "", "", "", "", "", "", "12000", "45.5", "75.2", "48.2", "68.5"],
+                ["CB-12", "Circuit Breaker", "22", "สถานีไฟฟ้าเชียงใหม่ 1", "1250", "ปกติ", "42.1", "Siemens", "2019", "18.7883", "98.9853", "1 ครั้ง", "ต่ำ", "ก๊าซ SF6", "ถาวร", "ถาวร", "", "", "", "", "", "", "22000", "15.8", "45.1", "17.5", "45.2"],
+                ["TR-02", "Transformer", "115", "สถานีไฟฟ้าแม่ริม", "630", "เตือน (อุณหภูมิสูง)", "78.2", "ABB", "2015", "18.9142", "98.9463", "2 ครั้ง", "สูง", "น้ำมันหม้อแปลง", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "9450", "48.2", "78.2", "50.1", "78.9"],
+                ["DS-05", "Disconnect Switch", "22", "สถานีไฟฟ้าหางดง", "630", "ปกติ", "38.0", "Schneider", "2021", "18.6872", "98.9172", "ไม่มี", "ต่ำ", "อากาศ", "ถาวร", "ถาวร", "", "", "", "", "", "", "4500", "10.5", "38.0", "11.2", "35.0"],
+                ["CB-04", "Circuit Breaker", "115", "สถานีไฟฟ้าสารภี", "2000", "ปกติ", "45.8", "Siemens", "2017", "18.7150", "99.0360", "ไม่มี", "ต่ำ", "ก๊าซ SF6", "ถาวร", "ถาวร", "", "", "", "", "", "", "30000", "65.2", "45.8", "68.0", "52.4"],
+                ["TR-03", "Transformer", "115", "สถานีไฟฟ้าสันทราย", "800", "ปิดปรับปรุง", "25.0", "Toshiba", "2012", "18.8475", "99.0450", "3 ครั้ง", "ปานกลาง", "น้ำมันหม้อแปลง", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "12000", "5.0", "25.0", "6.2", "30.1"],
+                ["LA-09", "Lightning Arrester", "22", "สถานีไฟฟ้าสันกำแพง", "400", "ปกติ", "33.4", "Schneider", "2022", "18.7450", "99.1200", "ไม่มี", "ต่ำ", "โพลิเมอร์", "ถาวร", "ถาวร", "", "", "", "", "", "", "2800", "3.2", "33.4", "4.0", "28.7"],
+                ["CB-07", "Circuit Breaker", "22", "สถานีไฟฟ้าแม่โจ้", "1250", "ปกติ", "40.9", "ABB", "2020", "18.8988", "99.0125", "ไม่มี", "ต่ำ", "สุญญากาศ", "ถาวร", "ถาวร", "", "", "", "", "", "", "22000", "22.4", "40.9", "23.8", "48.6"],
+                ["TR-04", "Transformer", "115", "สถานีไฟฟ้าหางดง", "1000", "ปกติ", "58.3", "Toshiba", "2016", "18.6872", "98.9172", "1 ครั้ง", "ต่ำ", "น้ำมันหม้อแปลง", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "15000", "38.5", "58.3", "40.1", "60.2"],
+                ["DS-11", "Disconnect Switch", "115", "สถานีไฟฟ้าแม่ริม", "1200", "ชำรุดรอซ่อม", "92.4", "Schneider", "2014", "18.9142", "98.9463", "4 ครั้ง", "สูงมาก", "อากาศ", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "18000", "75.0", "92.4", "78.5", "85.4"],
+                ["CB-22", "Circuit Breaker", "22", "สถานีไฟฟ้าสันกำแพง", "1250", "ปกติ", "44.2", "Siemens", "2018", "18.7450", "99.1200", "ไม่มี", "ต่ำ", "ก๊าซ SF6", "ถาวร", "ถาวร", "", "", "", "", "", "", "22000", "28.6", "44.2", "30.0", "49.0"],
+                ["TR-05", "Transformer", "115", "สถานีไฟฟ้าแม่โจ้", "1250", "เตือน (อุณหภูมิสูง)", "76.9", "ABB", "2015", "18.8988", "99.0125", "2 ครั้ง", "สูง", "น้ำมันหม้อแปลง", "ถาวร", "ถาวร", "", "", "", "", "", "", "18750", "52.3", "76.9", "55.4", "72.3"],
+                ["CB-19", "Circuit Breaker", "22", "สถานีไฟฟ้าสันทราย", "630", "ปกติ", "39.5", "Schneider", "2021", "18.8475", "99.0450", "ไม่มี", "ต่ำ", "สุญญากาศ", "ชั่วคราว", "ชั่วคราว", "", "", "", "", "", "", "4500", "18.9", "39.5", "19.8", "41.5"]
             ]
         };
 
@@ -424,7 +424,7 @@
             const refreshIcon = document.getElementById('refresh-icon');
             if (refreshIcon) refreshIcon.classList.add('fa-spin');
 
-            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&t=${Date.now()}`;
 
             try {
                 const response = await fetch(url);
@@ -442,19 +442,12 @@
                 const jsonText = text.substring(startIdx, endIdx);
                 const dataObj = JSON.parse(jsonText);
 
-                // ดึงโครงสร้างหัวคอลัมน์ดั้งเดิมจาก Google Sheets API (และปรับแก้ชื่อคอลัมน์พิกัดติดตั้ง และโหลดสูงสุด)
-                parsedHeaders = dataObj.table.cols.map(col => {
-                    let label = col.label || 'คอลัมน์ไม่มีชื่อ';
-                    if (label.includes("พิกัดติดตั้ง")) {
-                        label = label.replace("พิกัดติดตั้ง", "พิกัดหม้อแปลงติดตั้ง");
+                // ดึงโครงสร้างหัวคอลัมน์จาก Google Sheets API โดยตรง เพื่อให้ข้อความหัวตารางเปลี่ยนตามชีตแบบเรียลไทม์
+                parsedHeaders = dataObj.table.cols.map((col, idx) => {
+                    if (col.label && col.label.trim()) {
+                        return col.label.trim();
                     }
-                    if (label.includes("โหลดสูงสุด") && !label.includes("%") && !label.includes("(MW)")) {
-                        label = "โหลดสูงสุด (MW)";
-                    }
-                    if (label.includes("โหลดสูงสุด") && (label.includes("%") || label.includes("เปอร์เซ็นต์"))) {
-                        label = "โหลดสูงสุด (%)";
-                    }
-                    return label;
+                    return col.id ? `คอลัมน์ ${col.id}` : `คอลัมน์ ${idx + 1}`;
                 });
 
                 // ดึงข้อมูลแถวทั้งหมดจาก API
@@ -611,33 +604,41 @@
 
         // Setup Dropdowns dynamically
         function populateSelectorDropdowns() {
-            const stats = getColumnStats();
             const barAxisSelector = document.getElementById('bar-axis-selector');
-
             if (!barAxisSelector) return;
 
             barAxisSelector.innerHTML = '';
 
-            // กรองให้เลือกได้แค่ "โหลดสูงสุด (MW)" และ "โหลดสูงสุด (%)"
-            const filteredBarCols = stats.numericCols.filter(col =>
-                col.label.includes("โหลดสูงสุด (MW)") || col.label.includes("โหลดสูงสุด (%)")
-            );
+            const colAAIdx = 26; // คอลัมน์ AA (Index 26)
+            const aaTitle = (parsedHeaders.length > colAAIdx && parsedHeaders[colAAIdx]) 
+                ? parsedHeaders[colAAIdx] 
+                : "โหลดสูงสุด ส.ค. 69 (%) (AA)";
 
-            if (filteredBarCols.length > 0) {
-                filteredBarCols.forEach(col => {
-                    const opt = document.createElement('option');
-                    opt.value = col.index;
-                    opt.textContent = col.label;
-                    if (col.label.includes("โหลดสูงสุด (%)")) {
-                        opt.selected = true;
-                    }
-                    barAxisSelector.appendChild(opt);
-                });
-            } else {
-                const opt = document.createElement('option');
-                opt.value = 'count';
-                opt.textContent = 'จำนวนรายการแถว (นับจำนวน)';
-                barAxisSelector.appendChild(opt);
+            // ตัวเลือกเริ่มต้นหลัก: คอลัมน์ AA (%)
+            const optAA = document.createElement('option');
+            optAA.value = colAAIdx;
+            optAA.textContent = aaTitle;
+            optAA.selected = true;
+            barAxisSelector.appendChild(optAA);
+
+            // ตัวเลือกเพิ่มเติม (ถ้ามี)
+            if (parsedHeaders.length > 24) {
+                const optY = document.createElement('option');
+                optY.value = 24;
+                optY.textContent = parsedHeaders[24] || "โหลดสูงสุด พ.ค. 69 (%)";
+                barAxisSelector.appendChild(optY);
+            }
+            if (parsedHeaders.length > 23) {
+                const optX = document.createElement('option');
+                optX.value = 23;
+                optX.textContent = parsedHeaders[23] || "โหลดสูงสุด (MW)";
+                barAxisSelector.appendChild(optX);
+            }
+            if (parsedHeaders.length > 25) {
+                const optZ = document.createElement('option');
+                optZ.value = 25;
+                optZ.textContent = parsedHeaders[25] || "โหลดสูงสุด ส.ค. 69 (MW)";
+                barAxisSelector.appendChild(optZ);
             }
 
             // อัปเดตกราฟให้ตรงกับค่าตั้งต้น
@@ -832,22 +833,25 @@
             const metric2Title = parsedHeaders.length > targetColIdxForType ? parsedHeaders[targetColIdxForType] : "สถานะลักษณะสถานี";
 
             // KPI 3 Configuration: ผลรวมคอลัมน์ W
-            let metric3Title = hasW ? parsedHeaders[colWIdx] : "พิกัดหม้อแปลงติดตั้ง";
-            metric3Title = metric3Title.replace(/\(MW\)/i, '').trim(); // Remove (MW) to style it separately
-            if (metric3Title.includes("พิกัดติดตั้ง") || metric3Title.includes("ค่าคำนวณกำลังไฟฟ้า") || metric3Title.includes("โหลดไฟฟ้า")) {
-                metric3Title = "พิกัดหม้อแปลงติดตั้ง";
-            }
-            const formattedSumW = sumW.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            let metric3Title = (hasW && parsedHeaders[colWIdx] && parsedHeaders[colWIdx].trim())
+                ? parsedHeaders[colWIdx].trim()
+                : "พิกัดหม้อแปลงติดตั้ง ส.ค. 69";
+            const card3Rating = sumW;
+            const formattedSumW = card3Rating.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
             const metric3Value = hasW ? formattedSumW : "0";
+            const metric3Unit = metric3Title.includes("MW") ? "MW" : "MVA";
 
-            // KPI 4 Configuration: ผลรวมของข้อมูลในคอลัมน์ X และเปอร์เซ็นต์เฉลี่ยคอลัมน์ Y
+            // KPI 4 Configuration: ผลรวมของข้อมูลในคอลัมน์ X, เปอร์เซ็นต์เฉลี่ยคอลัมน์ Y และผลรวมคอลัมน์ Z
             const colXIdx = 23;
             const colYIdx = 24;
+            const colZIdx = 25;
             let sumX = 0;
             let sumY = 0;
+            let sumZ = 0;
             let countY = 0;
             let hasX = parsedHeaders.length > colXIdx;
             let hasY = parsedHeaders.length > colYIdx;
+            let hasZ = parsedHeaders.length > colZIdx;
 
             if (hasX) {
                 filteredTableRows.forEach(row => {
@@ -885,11 +889,43 @@
                     }
                 });
             }
+
+            if (hasZ) {
+                filteredTableRows.forEach(row => {
+                    // กรองค่าในคอลัมน์ O (Index 14) ไม่นำมารวมถ้ามีคำว่า spp หรือ vspp
+                    if (row.length > 14 && row[14]) {
+                        const valO = String(row[14]).toLowerCase();
+                        if (valO.includes('spp') || valO.includes('vspp')) {
+                            return;
+                        }
+                    }
+                    if (row.length > colZIdx) {
+                        const valZ = parseFloat(row[colZIdx]);
+                        if (!isNaN(valZ)) {
+                            sumZ += valZ;
+                        }
+                    }
+                });
+            }
             const avgY = countY > 0 ? (sumY / countY) : 0;
 
-            let metric4Title = "โหลดสูงสุด";
+            let metric4Title = "โหลดสูงสุดปี 2569 (พ.ค. 69)";
             const metric4Value = sumX.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
             const metric4SubValue = avgY.toFixed(2) + "%";
+            let metric4ZTitle = (hasZ && parsedHeaders[colZIdx] && parsedHeaders[colZIdx].trim() && !parsedHeaders[colZIdx].includes("ข้อมูลเพิ่มเติม"))
+                ? parsedHeaders[colZIdx].trim()
+                : "โหลดสูงสุด (ส.ค. 69)";
+            const metric4ZValue = sumZ.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            const transformerCapMW = sumW * 0.9;
+            const pctZ = transformerCapMW > 0 ? ((sumZ / transformerCapMW) * 100) : 0;
+            const metric4ZSubValue = pctZ.toFixed(2) + "%";
+            const metric4ZUnit = metric4ZTitle.includes("MVA") ? "MVA" : "MW";
+
+            // ชื่อหัวข้อเปอร์เซ็นต์จ่ายโหลด ดึงจากหัวคอลัมน์ AA (Index 26) ใน Google Sheets
+            const colAAIdx = 26;
+            let metric4ZSubTitle = (parsedHeaders.length > colAAIdx && parsedHeaders[colAAIdx] && parsedHeaders[colAAIdx].trim())
+                ? parsedHeaders[colAAIdx].trim()
+                : "เปอร์เซ็นต์จ่ายโหลดเดือน ส.ค. 69";
 
             // ดึง HTML ของ Dropdown คัดเลือกประเภทสถานีจากคอลัมน์ O ทั้งหมด
             let selectO_HTML = '';
@@ -969,50 +1005,60 @@
                     </div>
                 </div>
 
-                <!-- KPI 3: แสดงผลรวมของคอลัมน์ W (Index 22) -->
+                <!-- KPI 3: พิกัดหม้อแปลงติดตั้ง & โหลดสูงสุด (ส.ค. 69) -->
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col justify-between transition-all hover:shadow-md group h-full">
-                    <div class="flex items-start justify-between w-full">
-                        <div>
-                            <p class="text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wider">${metric3Title}</p>
-                            <h3 class="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">${metric3Value} <span class="text-base text-gray-400 dark:text-slate-500 font-medium ml-0.5">MW</span></h3>
-                            <p class="text-[11px] text-orange-600 dark:text-orange-400 mt-1.5 flex items-center gap-1 font-medium bg-orange-50 dark:bg-orange-900/30 w-max px-2 py-1 rounded">
-                                <i class="fa-solid fa-bolt-lightning animate-pulse"></i> รวมโหลดการใช้พลังงานไฟฟ้าทั้งหมด
-                            </p>
+                    <!-- แถวบน: พิกัดหม้อแปลงติดตั้ง -->
+                    <div>
+                        <div class="flex items-start justify-between w-full mb-1">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wider">${metric3Title}</p>
+                                <h3 class="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">${metric3Value} <span class="text-base text-gray-400 dark:text-slate-500 font-medium ml-0.5">${metric3Unit}</span></h3>
+                            </div>
+                            <div class="bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/40 dark:to-orange-800/40 text-orange-600 dark:text-orange-400 p-3.5 rounded-xl shadow-inner group-hover:scale-105 transition-transform duration-300">
+                                <i class="fa-solid fa-plug-circle-bolt text-xl font-bold"></i>
+                            </div>
                         </div>
-                        <div class="bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/40 dark:to-orange-800/40 text-orange-600 dark:text-orange-400 p-4 rounded-xl shadow-inner group-hover:scale-105 transition-transform duration-300">
-                            <i class="fa-solid fa-plug-circle-bolt text-2xl font-bold"></i>
+                    </div>
+
+                    <!-- แถวล่าง: โหลดสูงสุด ส.ค. 69 -->
+                    <div class="border-t border-gray-100 dark:border-slate-700 pt-3.5 mt-3.5">
+                        <div class="flex items-start justify-between w-full mb-2">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wider">${metric4ZTitle}</p>
+                                <h3 class="text-3xl font-bold text-blue-700 dark:text-blue-400 mt-1">${metric4ZValue} <span class="text-base text-gray-400 dark:text-slate-500 font-medium ml-0.5">${metric4ZUnit}</span></h3>
+                            </div>
+                            <div class="bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 text-blue-600 dark:text-blue-400 p-3.5 rounded-xl shadow-inner group-hover:scale-105 transition-transform duration-300">
+                                <i class="fa-solid fa-plus-minus text-xl font-bold"></i>
+                            </div>
+                        </div>
+                        <div class="w-full mt-2">
+                            <div class="flex justify-between items-center text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1">
+                                <span>${metric4ZSubTitle}</span>
+                                <span class="text-blue-600 dark:text-blue-400 font-bold">${metric4ZSubValue}</span>
+                            </div>
+                            <div class="w-full bg-gray-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden flex">
+                                <div class="bg-blue-500 h-full transition-all duration-500" style="width: ${metric4ZSubValue}"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- KPI 4 -->
+                <!-- KPI 4: โหลดสูงสุด (พ.ค. 69) -->
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col justify-between transition-all hover:shadow-md h-full group">
                     <div class="flex items-start justify-between w-full">
                         <div>
                             <p class="text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wider">${metric4Title}</p>
                             <h3 class="text-3xl font-bold text-purple-700 dark:text-purple-400 mt-1">${metric4Value} <span class="text-base text-gray-400 dark:text-slate-500 font-medium ml-0.5">MW</span></h3>
-                            <p class="text-[11px] text-purple-600 dark:text-purple-400 mt-1.5 flex items-center gap-1 font-medium bg-purple-50 dark:bg-purple-950/30 w-max px-2 py-1 rounded">
-                                <i class="fa-solid fa-gauge-high animate-pulse"></i> รวมโหลดสูงสุดทั้งหมด
-                            </p>
                         </div>
-                        <div class="bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 text-purple-600 dark:text-purple-400 p-4 rounded-xl shadow-inner group-hover:scale-105 transition-transform duration-300">
-                            <i class="fa-solid fa-plug-circle-bolt text-2xl font-bold"></i>
-                        </div>
-                    </div>
-                    <div class="mt-4 pt-2 border-t border-gray-100 dark:border-slate-700 w-full">
-                        <div class="flex justify-between items-center text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1">
-                            <span>เปอร์เซ็นต์จ่ายโหลดเฉลี่ย (Y)</span>
-                            <span class="text-purple-600 dark:text-purple-400 font-bold">${metric4SubValue}</span>
-                        </div>
-                        <div class="w-full bg-gray-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden flex">
-                            <div class="bg-purple-500 h-full transition-all duration-500" style="width: ${metric4SubValue}"></div>
+                        <div class="bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 text-purple-600 dark:text-purple-400 p-3.5 rounded-xl shadow-inner group-hover:scale-105 transition-transform duration-300">
+                            <i class="fa-solid fa-plug-circle-bolt text-xl font-bold"></i>
                         </div>
                     </div>
                 </div>
             `;
 
             // Setup automated visual insights summary text
-            generateAIInsights(totalRows, mainNumIdx, avgVal, alertCount);
+            generateAIInsights();
         }
 
         // Change handler for Filter Column O
@@ -1030,11 +1076,31 @@
             return set.size;
         }
 
-        function generateAIInsights(totalRows, mainNumIdx, avgVal, alertCount) {
+        // Handler when Y-axis changes on the chart
+        function handleBarAxisChange() {
+            regenerateCharts();
+            generateAIInsights();
+        }
+
+        function generateAIInsights() {
             const aiTextEl = document.getElementById('ai-insight-text');
             if (!aiTextEl) return;
 
-            // ค้นหาคอลัมน์ชื่อสถานีไฟฟ้า
+            // ตรวจสอบแกน Y ที่เลือกจาก Dropdown บนกราฟ
+            const barAxisSelector = document.getElementById('bar-axis-selector');
+            const colAAIdx = 26; // คอลัมน์ AA: โหลดสูงสุด ส.ค. 69 (%)
+            const selectedColIdx = (barAxisSelector && barAxisSelector.value !== undefined && !isNaN(parseInt(barAxisSelector.value, 10)))
+                ? parseInt(barAxisSelector.value, 10)
+                : colAAIdx;
+
+            const selectedOpt = barAxisSelector && barAxisSelector.selectedIndex >= 0 
+                ? barAxisSelector.options[barAxisSelector.selectedIndex] 
+                : null;
+            const selectedMetricName = selectedOpt 
+                ? selectedOpt.text 
+                : (parsedHeaders[selectedColIdx] || 'โหลดสูงสุด (%)');
+
+            // ค้นหาคอลัมน์ชื่อสถานีไฟฟ้า (คอลัมน์ D / Index 3)
             let subColIdx = 3;
             parsedHeaders.forEach((h, i) => {
                 if (h.includes("สถานีไฟฟ้า") || h.toLowerCase().includes("substation") || h.includes("ชื่อสถานีไฟฟ้า")) {
@@ -1042,56 +1108,105 @@
                 }
             });
 
-            // ค้นหาคอลัมน์ % โหลดสูงสุด
-            let loadPctColIdx = 24;
-            parsedHeaders.forEach((h, i) => {
-                const hl = h.toLowerCase();
-                if ((hl.includes("โหลด") && hl.includes("%")) || (hl.includes("load") && hl.includes("%"))) {
-                    loadPctColIdx = i;
-                }
-            });
+            // กำหนดคอลัมน์ % และ MW ให้สัมพันธ์กับตัวเลือกแกน Y บนกราฟ
+            let loadPctColIdx = colAAIdx;
+            let loadMWColIdx = 25;
+            let isSelectedPercentage = true;
 
-            // ค้นหาดัชนีของคอลัมน์อื่น ๆ สำหรับข้อมูลเพิ่มเติม
+            if (selectedColIdx === 26) {
+                // คอลัมน์ AA: โหลดสูงสุด ส.ค. 69 (%)
+                loadPctColIdx = 26;
+                loadMWColIdx = 25; // คอลัมน์ Z: โหลดสูงสุด ส.ค. 69 (MW)
+                isSelectedPercentage = true;
+            } else if (selectedColIdx === 24) {
+                // คอลัมน์ Y: โหลดสูงสุด พ.ค. 69 (%)
+                loadPctColIdx = 24;
+                loadMWColIdx = 23; // คอลัมน์ X: โหลดสูงสุด พ.ค. 69 (MW)
+                isSelectedPercentage = true;
+            } else if (selectedColIdx === 25) {
+                // คอลัมน์ Z: โหลดสูงสุด ส.ค. 69 (MW)
+                loadPctColIdx = 26;
+                loadMWColIdx = 25;
+                isSelectedPercentage = false;
+            } else if (selectedColIdx === 23) {
+                // คอลัมน์ X: โหลดสูงสุด (MW) (พ.ค. 69)
+                loadPctColIdx = 24;
+                loadMWColIdx = 23;
+                isSelectedPercentage = false;
+            } else {
+                // กรณีเลือกคอลัมน์ตัวเลขอื่นๆ
+                const isPct = selectedMetricName.includes('%');
+                if (isPct) {
+                    loadPctColIdx = selectedColIdx;
+                    isSelectedPercentage = true;
+                } else {
+                    loadMWColIdx = selectedColIdx;
+                    isSelectedPercentage = false;
+                }
+            }
+
             let devIdColIdx = 0;
             let devTypeColIdx = 1;
-            let loadMWColIdx = 23;
 
-            // กรองสถานีและอุปกรณ์ที่มีโหลดสูงเกิน 70%
+            // กรองสถานีและอุปกรณ์ที่มีโหลดสูงเกิน 70% ตามเกณฑ์แกน Y ที่เลือก
             const highLoadItems = [];
             filteredTableRows.forEach(row => {
-                // หากตัวกรองหลักเป็น 'แสดงทั้งหมด' (all) ให้แสดงเฉพาะประเภท 'ถาวร' หรือ 'ชั่วคราว'
+                const colOVal = (row.length > 14 && row[14]) ? String(row[14]).trim() : '';
+
+                // เงื่อนไขคอลัมน์ O:
+                // 1. หากตัวกรองหลักเป็น 'all' ให้เลือกเฉพาะ 'ถาวร' หรือ 'ชั่วคราว'
                 if (filterValO === 'all') {
-                    if (row.length > 14 && row[14]) {
-                        const valO = String(row[14]).trim();
-                        if (valO !== 'ถาวร' && valO !== 'ชั่วคราว') {
-                            return;
-                        }
-                    } else {
-                        return; // ข้ามแถวที่ไม่มีข้อมูลประเภทสถานี
+                    if (colOVal !== 'ถาวร' && colOVal !== 'ชั่วคราว') {
+                        return;
+                    }
+                } else {
+                    // 2. หากเลือกตัวกรองในการ์ดที่ 1 ให้กรองตามเงื่อนไขที่เลือก
+                    if (colOVal !== filterValO) {
+                        return;
                     }
                 }
 
-                if (loadPctColIdx < row.length) {
-                    const loadPctVal = parseFloat(row[loadPctColIdx]);
-                    if (!isNaN(loadPctVal) && loadPctVal > 70) {
-                        const stationName = row[subColIdx] ? row[subColIdx].trim() : 'ไม่ระบุสถานี';
-                        const deviceId = row[devIdColIdx] ? row[devIdColIdx].trim() : 'ไม่ระบุอุปกรณ์';
-                        const deviceType = row[devTypeColIdx] ? row[devTypeColIdx].trim() : 'ไม่ระบุประเภท';
-                        const loadMWVal = row[loadMWColIdx] ? parseFloat(row[loadMWColIdx]) : null;
+                // ดึงค่า % ตามคอลัมน์เป้าหมาย
+                let loadPctVal = null;
+                if (loadPctColIdx !== null && loadPctColIdx < row.length) {
+                    const rawPct = row[loadPctColIdx];
+                    loadPctVal = typeof rawPct === 'string'
+                        ? parseFloat(rawPct.replace('%', '').trim())
+                        : parseFloat(rawPct);
+                }
 
-                        highLoadItems.push({
-                            station: stationName,
-                            device: deviceId,
-                            type: deviceType,
-                            loadPct: loadPctVal,
-                            loadMW: loadMWVal
-                        });
-                    }
+                // ดึงค่า MW ตามคอลัมน์เป้าหมาย
+                let loadMWVal = null;
+                if (loadMWColIdx !== null && loadMWColIdx < row.length) {
+                    const rawMW = row[loadMWColIdx];
+                    loadMWVal = typeof rawMW === 'string'
+                        ? parseFloat(rawMW.replace(/,/g, '').trim())
+                        : parseFloat(rawMW);
+                }
+
+                // ตรวจสอบเงื่อนไขเกิน 70%
+                const checkVal = isSelectedPercentage 
+                    ? loadPctVal 
+                    : (loadPctVal !== null ? loadPctVal : loadMWVal);
+
+                if (checkVal !== null && !isNaN(checkVal) && checkVal > 70) {
+                    const stationName = row[subColIdx] ? row[subColIdx].trim() : 'ไม่ระบุสถานี';
+                    const deviceId = row[devIdColIdx] ? row[devIdColIdx].trim() : 'ไม่ระบุอุปกรณ์';
+                    const deviceType = row[devTypeColIdx] ? row[devTypeColIdx].trim() : 'ไม่ระบุประเภท';
+
+                    highLoadItems.push({
+                        station: stationName,
+                        device: deviceId,
+                        type: deviceType,
+                        loadPct: !isNaN(loadPctVal) ? loadPctVal : 0,
+                        loadMW: !isNaN(loadMWVal) ? loadMWVal : null,
+                        sortVal: isSelectedPercentage ? (!isNaN(loadPctVal) ? loadPctVal : 0) : (!isNaN(loadMWVal) ? loadMWVal : 0)
+                    });
                 }
             });
 
-            // เรียงลำดับตาม % โหลดสูงสุดจากมากไปน้อย
-            highLoadItems.sort((a, b) => b.loadPct - a.loadPct);
+            // เรียงลำดับจากค่ามากไปน้อยตามแกนที่เลือก
+            highLoadItems.sort((a, b) => b.sortVal - a.sortVal);
 
             if (highLoadItems.length > 0) {
                 let itemsHtml = '';
@@ -1118,6 +1233,15 @@
                             </p>
                     ` : '';
 
+                    const primaryBadgeText = isSelectedPercentage 
+                        ? `${item.loadPct.toFixed(1)}%` 
+                        : (item.loadMW !== null ? `${item.loadMW.toFixed(1)} MW` : `${item.loadPct.toFixed(1)}%`);
+
+                    const subInfoLabel = isSelectedPercentage ? 'ปริมาณโหลดสูงสุด' : 'เปอร์เซ็นต์จ่ายโหลด';
+                    const subInfoValue = isSelectedPercentage 
+                        ? (item.loadMW !== null ? `${item.loadMW.toFixed(1)} MW` : 'ไม่ระบุโหลด')
+                        : `${item.loadPct.toFixed(1)}%`;
+
                     itemsHtml += `
                         <div class="bg-purple-950/40 border border-purple-800/60 rounded-xl p-3.5 flex flex-col justify-between hover:bg-purple-950/60 hover:scale-[1.01] transition-all duration-300">
                             <div class="flex justify-between items-start mb-2 gap-2">
@@ -1128,14 +1252,14 @@
                                     <p class="text-xs text-purple-300/80 mt-0.5">${item.device} • ${item.type}</p>
                                 </div>
                                 <span class="text-xs px-2.5 py-0.5 rounded-full border font-bold ${badgeClass} shadow-sm">
-                                    ${item.loadPct.toFixed(1)}%
+                                    ${primaryBadgeText}
                                 </span>
                             </div>
                             
                             <div class="mt-2">
                                 <div class="flex justify-between text-[11px] text-purple-200/70 mb-1">
-                                    <span>ปริมาณโหลดสูงสุด</span>
-                                    <span>${item.loadMW ? item.loadMW.toFixed(1) + ' MW' : 'ไม่ระบุโหลด'}</span>
+                                    <span>${subInfoLabel}</span>
+                                    <span>${subInfoValue}</span>
                                 </div>
                                 <div class="w-full bg-purple-950/80 h-1.5 rounded-full overflow-hidden">
                                     <div class="${progressClass} h-full transition-all duration-500" style="width: ${Math.min(item.loadPct, 100)}%"></div>
@@ -1151,10 +1275,10 @@
                     <div class="flex flex-col gap-4">
                         <div class="flex flex-col sm:flex-row sm:items-center gap-2 border-b border-purple-800 pb-3">
                             <span class="bg-rose-500/20 text-rose-300 border border-rose-500/30 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-sm w-max">
-                                <i class="fa-solid fa-triangle-exclamation animate-pulse"></i> ข้อมูลโหลดเกินเกณฑ์ (> 70%)
+                                <i class="fa-solid fa-triangle-exclamation animate-pulse"></i> ข้อมูลโหลดเกินเกณฑ์ (> 70%) • ${selectedMetricName}
                             </span>
                             <span class="text-xs sm:text-sm text-purple-200">
-                                ตรวจพบอุปกรณ์ในสถานีไฟฟ้าที่มี <strong>% โหลดสูงสุดเกิน 70%</strong> ทั้งหมด <strong>${highLoadItems.length} รายการ</strong> เพื่อวางแผนปรับปรุงต่อไป:
+                                ตรวจพบอุปกรณ์ในสถานีไฟฟ้าที่มี <strong>${selectedMetricName} เกิน 70%</strong> ทั้งหมด <strong>${highLoadItems.length} รายการ</strong> เพื่อวางแผนปรับปรุงต่อไป:
                             </span>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
@@ -1169,7 +1293,7 @@
                             <i class="fa-solid fa-circle-check"></i> ระบบปกติ
                         </span>
                         <span class="text-sm text-purple-200 leading-relaxed">
-                            จากการวิเคราะห์ข้อมูลตามตัวกรองปัจจุบัน ไม่พบสถานีไฟฟ้าที่มีระดับโหลดสูงสุดเกิน <strong>70%</strong> อุปกรณ์ทั้งหมดทำงานในขอบเขตการทำงานที่ปลอดภัย
+                            จากการวิเคราะห์ข้อมูลตามเกณฑ์ <strong>${selectedMetricName}</strong> และตัวกรองปัจจุบัน ไม่พบสถานีไฟฟ้าที่มีระดับโหลดเกิน <strong>70%</strong> อุปกรณ์ทั้งหมดทำงานในขอบเขตการทำงานที่ปลอดภัย
                         </span>
                     </div>
                 `;
@@ -1179,86 +1303,82 @@
         // Charts Rendering engine
         function regenerateCharts() {
             const barAxisSelector = document.getElementById('bar-axis-selector');
-
             if (!barAxisSelector) return;
 
+            const colAAIdx = 26; // คอลัมน์ AA (Index 26)
             const barSelectedValue = barAxisSelector.value;
+            const targetColIdx = (barSelectedValue !== undefined && !isNaN(parseInt(barSelectedValue, 10)))
+                ? parseInt(barSelectedValue, 10)
+                : colAAIdx;
 
-            // Let's deduce groupings based on Card 1 filter
-            const stats = getColumnStats();
-            let barGroupByColIdx = 1; // ค่าเริ่มต้นเป็นประเภทอุปกรณ์ (Index 1)
+            // แกน X แสดงผลเป็นรายชื่อสถานีไฟฟ้าในคอลัมน์ D (Index 3)
+            const barGroupByColIdx = 3;
 
-            const filterLower = filterValO.toLowerCase();
-            const isSpecialGroup = filterValO === 'ผู้ใช้ไฟระบบ' || 
-                                   filterValO === 'ยกเลิก' || 
-                                   filterValO === 'รอรื้อถอน' || 
-                                   filterLower.includes('spp') || 
-                                   filterLower.includes('vspp');
-
-            if (isSpecialGroup) {
-                barGroupByColIdx = 3; // เปลี่ยนแกน X เป็นรายชื่อสถานีไฟฟ้า (Index 3)
-            }
-            if (parsedHeaders.length <= barGroupByColIdx) barGroupByColIdx = 0;
-
-            const barGroupByLabel = parsedHeaders[barGroupByColIdx] || 'ข้อมูลหลัก';
+            // ตรวจสอบชื่อหัวข้อกราฟ
             const barChartTitleEl = document.getElementById('bar-chart-title');
-            if (barChartTitleEl) {
-                const selectedOpt = barAxisSelector.options[barAxisSelector.selectedIndex];
-                const metricName = selectedOpt ? selectedOpt.text : (parsedHeaders[parseInt(barSelectedValue, 10)] || '');
-                let groupName = "ประเภทอุปกรณ์";
-                if (barGroupByColIdx === 3) {
-                    groupName = "สถานีไฟฟ้า";
-                }
+            const selectedOpt = barAxisSelector.options[barAxisSelector.selectedIndex];
+            const metricName = selectedOpt ? selectedOpt.text : (parsedHeaders[targetColIdx] || 'โหลดสูงสุด (%)');
+            const filterDesc = filterValO === 'all' 
+                ? 'เฉพาะสถานีแบบถาวรและชั่วคราว' 
+                : `เฉพาะสถานีแบบ "${filterValO}"`;
 
-                if (barSelectedValue === 'count') {
-                    barChartTitleEl.innerText = `ปริมาณอุปกรณ์การไฟฟ้า (จัดกลุ่มตาม${groupName})`;
-                } else {
-                    barChartTitleEl.innerText = `${metricName} (จัดกลุ่มตาม${groupName})`;
-                }
+            if (barChartTitleEl) {
+                barChartTitleEl.innerText = `${metricName} จำแนกตามรายชื่อสถานีไฟฟ้า (${filterDesc})`;
             }
 
             // Aggregate data for Bar Chart
             const barAgg = {};
             filteredTableRows.forEach(row => {
-                // หากตัวกรองหลักเป็น 'แสดงทั้งหมด' (all) ให้แสดงเฉพาะประเภท 'ถาวร' หรือ 'ชั่วคราว'
+                const colOVal = (row.length > 14 && row[14]) ? String(row[14]).trim() : '';
+
+                // เงื่อนไข 1: กรณีปกติ (all) ให้เลือกเฉพาะ 'ถาวร' และ 'ชั่วคราว'
                 if (filterValO === 'all') {
-                    if (row.length > 14 && row[14]) {
-                        const valO = String(row[14]).trim();
-                        if (valO !== 'ถาวร' && valO !== 'ชั่วคราว') {
-                            return;
-                        }
-                    } else {
-                        return; // ข้ามแถวที่ไม่มีข้อมูลประเภทสถานี
+                    if (colOVal !== 'ถาวร' && colOVal !== 'ชั่วคราว') {
+                        return;
+                    }
+                } else {
+                    // เงื่อนไข 2: กรณีเลือกตัวกรองในการ์ดที่ 1 ให้เป็นไปตามเงื่อนไขที่เลือก
+                    if (colOVal !== filterValO) {
+                        return;
                     }
                 }
 
-                const groupKey = row[barGroupByColIdx] ? row[barGroupByColIdx].trim() : 'ไม่มีหมวดหมู่';
-                if (!barAgg[groupKey]) {
-                    barAgg[groupKey] = { sum: 0, count: 0 };
+                // ดึงชื่อสถานีไฟฟ้าจากคอลัมน์ D (Index 3)
+                const stationName = (row.length > barGroupByColIdx && row[barGroupByColIdx]) 
+                    ? String(row[barGroupByColIdx]).trim() 
+                    : '';
+                if (!stationName) return;
+
+                if (!barAgg[stationName]) {
+                    barAgg[stationName] = { sum: 0, count: 0 };
                 }
 
-                if (barSelectedValue === 'count') {
-                    barAgg[groupKey].sum += 1;
-                    barAgg[groupKey].count += 1;
-                } else {
-                    const val = parseFloat(row[parseInt(barSelectedValue, 10)]);
-                    if (!isNaN(val)) {
-                        barAgg[groupKey].sum += val;
-                        barAgg[groupKey].count += 1;
+                // ดึงข้อมูลตัวเลขจากคอลัมน์เป้าหมาย (เริ่มต้นคือคอลัมน์ AA)
+                if (row.length > targetColIdx) {
+                    const rawVal = row[targetColIdx];
+                    const numVal = typeof rawVal === 'string'
+                        ? parseFloat(rawVal.replace('%', '').trim())
+                        : parseFloat(rawVal);
+                    if (!isNaN(numVal)) {
+                        barAgg[stationName].sum += numVal;
+                        barAgg[stationName].count += 1;
                     }
                 }
             });
 
-            const barLabels = Object.keys(barAgg);
+            // จัดเรียงชื่อสถานีตามพจนานุกรมภาษาไทย
+            const barLabels = Object.keys(barAgg).sort((a, b) => a.localeCompare(b, 'th'));
             const barData = barLabels.map(label => {
                 const record = barAgg[label];
-                if (barSelectedValue === 'count') return record.sum;
-                return record.count > 0 ? (record.sum / record.count) : 0;
+                if (record.count === 0) return 0;
+                return Number((record.sum / record.count).toFixed(2));
             });
+
+            // ตรวจสอบว่าคอลัมน์เป้าหมายเป็นเปอร์เซ็นต์หรือไม่
+            const isPercentage = metricName.includes('%') || targetColIdx === 26 || targetColIdx === 24;
 
             // Draw Bar Chart
             const isDark = document.documentElement.classList.contains('dark');
-            // ปรับสี grid ให้เห็นชัดขึ้นทั้งในโหมดมืดและสว่าง
             const gridColor = isDark ? '#475569' : '#cbd5e1';
             const textColor = isDark ? '#cbd5e1' : '#64748b';
 
@@ -1269,12 +1389,12 @@
                 data: {
                     labels: barLabels,
                     datasets: [{
-                        label: barSelectedValue === 'count' ? 'จำนวน (ชุด)' : (barAxisSelector.options[barAxisSelector.selectedIndex]?.text || ''),
+                        label: metricName,
                         data: barData,
                         backgroundColor: 'rgba(109, 40, 217, 0.75)',
                         borderColor: 'rgba(109, 40, 217, 1)',
                         borderWidth: 1.5,
-                        borderRadius: 8,
+                        borderRadius: 6,
                         hoverBackgroundColor: 'rgba(139, 92, 246, 0.9)'
                     }]
                 },
@@ -1282,13 +1402,33 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const val = context.parsed.y;
+                                    return ` ${context.dataset.label || ''}: ${val.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}${isPercentage ? '%' : ' MW'}`;
+                                }
+                            }
+                        }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
                             grid: { color: gridColor },
-                            ticks: { color: textColor, font: { family: 'Prompt', size: 10 } }
+                            ticks: { 
+                                color: textColor, 
+                                font: { family: 'Prompt', size: 10 },
+                                callback: function(value) {
+                                    return isPercentage ? (value + '%') : value;
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: isPercentage ? 'เปอร์เซ็นต์โหลด (%)' : 'โหลด (MW)',
+                                color: textColor,
+                                font: { family: 'Prompt', size: 11, weight: '500' }
+                            }
                         },
                         x: {
                             grid: { display: false },
@@ -1297,12 +1437,15 @@
                                 font: { family: 'Prompt', size: 10 },
                                 autoSkip: false,
                                 maxRotation: 45,
-                                minRotation: 0
+                                minRotation: 25
                             }
                         }
                     }
                 }
             });
+
+            // อัปเดตบทวิเคราะห์ข้อมูลให้สอดคล้องกับแกน Y ล่าสุด
+            generateAIInsights();
         }
 
         // Table Construction & Rendering
@@ -1325,18 +1468,19 @@
                     const isCurrent = activeSortColumn === colIndex;
                     const arrow = isCurrent ? (activeSortDirection === 'asc' ? ' <i class="fa-solid fa-arrow-up-short-wide text-pea"></i>' : ' <i class="fa-solid fa-arrow-down-wide-short text-pea"></i>') : '';
 
-                    // เช็คว่าใช่คอลัมน์พิกัดหม้อแปลงติดตั้ง หรือคอลัมน์โหลดสูงสุด (MW/%) หรือไม่ เพื่อจัดข้อมูลกึ่งกลาง
-                    const isCenterCol = colIndex === 22 || colIndex === 23 || colIndex === 24 || header.includes("พิกัดหม้อแปลงติดตั้ง") || (header.startsWith("โหลดสูงสุด") && (header.includes("MW") || header.includes("%")));
+                    // เช็คว่าใช่คอลัมน์ G, H, พิกัดหม้อแปลงติดตั้ง หรือคอลัมน์โหลดสูงสุด (MW/%) หรือไม่ เพื่อจัดข้อมูลกึ่งกลาง
+                    const isCenterCol = colIndex === 6 || colIndex === 7 || colIndex === 22 || colIndex === 23 || colIndex === 24 || colIndex === 25 || colIndex === 26 || header.includes("พิกัดหม้อแปลงติดตั้ง") || header.includes("โหลด");
                     const alignClass = isCenterCol ? 'text-center' : 'text-left';
                     const justifyClass = isCenterCol ? 'justify-center' : 'justify-start';
 
-                    let headerHTML = `<span>${header}</span>`;
-                    if (colIndex === 22 || header.includes("พิกัดหม้อแปลงติดตั้ง")) {
-                        headerHTML = `<div class="flex flex-col items-center text-[10px] sm:text-[11px] leading-tight"><span>พิกัดหม้อแปลง</span><span>ติดตั้ง (MW)</span></div>`;
-                    } else if (header.startsWith("โหลดสูงสุด") && (header.includes("MW") || header.includes("%"))) {
-                        const part1 = "โหลดสูงสุด";
-                        const part2 = header.replace("โหลดสูงสุด", "").trim();
-                        headerHTML = `<div class="flex flex-col items-center text-[10px] sm:text-[11px] leading-tight"><span>${part1}</span><span>${part2}</span></div>`;
+                    let headerHTML = '';
+                    if (header.includes('(') && header.includes(')')) {
+                        const parts = header.split('(');
+                        const textPart = parts[0].trim();
+                        const unitPart = '(' + parts.slice(1).join('(').trim();
+                        headerHTML = `<div class="flex flex-col items-center text-[10px] sm:text-[11px] leading-tight text-center"><span>${textPart}</span><span>${unitPart}</span></div>`;
+                    } else {
+                        headerHTML = `<div class="flex flex-col items-center text-[10px] sm:text-[11px] leading-tight text-center"><span>${header}</span></div>`;
                     }
 
                     const headerWrapClass = colIndex === 3 ? 'min-w-[140px] whitespace-normal' : 'whitespace-nowrap';
@@ -1376,7 +1520,7 @@
 
                     visualCols.forEach(index => {
                         const header = parsedHeaders[index] || '';
-                        const isCenterCol = index === 22 || index === 23 || index === 24 || header.includes("พิกัดหม้อแปลงติดตั้ง") || (header.startsWith("โหลดสูงสุด") && (header.includes("MW") || header.includes("%")));
+                        const isCenterCol = index === 6 || index === 7 || index === 22 || index === 23 || index === 24 || index === 25 || index === 26 || header.includes("พิกัดหม้อแปลงติดตั้ง") || header.includes("โหลด");
                         const cellAlignClass = isCenterCol ? 'text-center' : 'text-left';
 
                         if (index < row.length) {
@@ -1391,6 +1535,21 @@
                                     displayCell = `<span class="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs px-2.5 py-1 rounded-md font-semibold border border-amber-200 dark:border-amber-800">⛺ ชั่วคราว</span>`;
                                 } else {
                                     displayCell = `<span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs px-2.5 py-1 rounded-md font-semibold border border-indigo-200 dark:border-indigo-800">⚡ ${cellClean}</span>`;
+                                }
+                            } else if (index === 26 || (header.includes('%') && index !== 6)) {
+                                const num = parseFloat(cellClean);
+                                if (!isNaN(num)) {
+                                    const formattedVal = num.toFixed(2) + '%';
+                                    if (num > 70) {
+                                        displayCell = `<span class="text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900/50">${formattedVal}</span>`;
+                                    } else {
+                                        displayCell = `<span class="font-medium text-gray-700 dark:text-slate-300">${formattedVal}</span>`;
+                                    }
+                                }
+                            } else if (index === 22 || index === 25) {
+                                const num = parseFloat(cellClean);
+                                if (!isNaN(num)) {
+                                    displayCell = `<span class="font-semibold text-gray-800 dark:text-slate-200">${num.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>`;
                                 }
                             }
 
